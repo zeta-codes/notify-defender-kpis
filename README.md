@@ -109,6 +109,7 @@ In the Azure Portal:
 2. Go to **API connections**:
    - Open the **Office 365 Outlook** connection (e.g. `office365-conn`).
    - Click **Edit API connection → Authorize**, sign in with the account that will send mail.
+   - Click **Save**
 3. If using **Security Copilot**:
    - Open the `securitycopilot-conn` connection.
    - Authorize it with an account approved for Copilot usage in your tenant.
