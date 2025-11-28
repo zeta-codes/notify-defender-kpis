@@ -1,1 +1,1423 @@
-
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "logicApp_name": {
+      "type": "string",
+      "defaultValue": "NotifyDefenderKPIs"
+    },
+    "office365_connection_name": {
+      "type": "string",
+      "defaultValue": "office365-conn"
+    },
+    "securitycopilot_connection_name": {
+      "type": "string",
+      "defaultValue": "securitycopilot-conn"
+    },
+    "destinationMail": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Semicolon-separated destination mail addresses."
+      }
+    }
+  },
+  "variables": {
+    "defenderEmailConfig": {
+      "EnableMDE": true,
+      "EnableMDI": true,
+      "EnableMDO": true,
+      "EnableMDA": true,
+      "UnifiedSentinel": true,
+      "EnableCopilot": false,
+      "destinationMail": "[parameters('destinationMail')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('office365_connection_name')]",
+      "location": "[resourceGroup().location]",
+      "kind": "V1",
+      "properties": {
+        "displayName": "Office 365 Outlook",
+        "api": {
+          "name": "office365",
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]",
+          "type": "Microsoft.Web/locations/managedApis"
+        },
+        "connectionState": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Web/connections",
+      "apiVersion": "2016-06-01",
+      "name": "[parameters('securitycopilot_connection_name')]",
+      "location": "[resourceGroup().location]",
+      "kind": "V1",
+      "properties": {
+        "displayName": "Security Copilot",
+        "api": {
+          "name": "securitycopilot",
+          "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/securitycopilot')]",
+          "type": "Microsoft.Web/locations/managedApis"
+        },
+        "connectionState": "Enabled"
+      }
+    },
+    {
+      "name": "[guid(resourceGroup().id, 'NotifyDefenderKPIWorkflowConfig')]",
+      "type": "microsoft.insights/workbooks",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2022-04-01",
+      "kind": "shared",
+      "dependsOn": [
+        "[resourceId('Microsoft.Logic/workflows', parameters('logicApp_name'))]"
+      ],
+      "properties": {
+        "displayName": "NotifyDefenderKPIWorkflowConfig",
+        "serializedData": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"# Notify Defender KPIs Configuration\"},\"customWidth\":\"50\",\"name\":\"text - 3\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"33dfac39-778e-4904-b255-055776d64802\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Subscription\",\"type\":6,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"resourcecontainers\\r\\n| where type == \\\"microsoft.resources/subscriptions\\\"\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::all\"],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"8d25369f-adec-4a42-8576-2ec2651a2eb9\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"📖Help\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[]},\"jsonData\":\"[\\r\\n { \\\"value\\\": \\\"Yes\\\", \\\"label\\\": \\\"Yes\\\"},\\r\\n { \\\"value\\\": \\\"No\\\", \\\"label\\\": \\\"No\\\", \\\"selected\\\":true },\\r\\n { \\\"value\\\": \\\"Change Log\\\", \\\"label\\\": \\\"Change Log\\\"}\\r\\n]\",\"timeContext\":{\"durationMs\":86400000}}],\"style\":\"pills\",\"queryType\":0,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"customWidth\":\"70\",\"name\":\"parameters - 1\",\"styleSettings\":{\"margin\":\"150\",\"maxWidth\":\"90%\"}},{\"type\":1,\"content\":{\"json\":\"## Help:\\r\\n\\r\\nUse this workbook to enable or disable the email sections for the different products.\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Yes\"},\"name\":\"text - 2\"}],\"exportParameters\":true},\"name\":\"Title\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"resources\\r\\n| where type =~ 'microsoft.logic/workflows'\\r\\n| project name, id, location, resourceGroup,subscriptionId,ResourceTags = todynamic(tags)\\r\\n| where ResourceTags contains \\\"DefenderEmailConfiguration\\\"\\r\\n| extend DefederEmailConfiguration=tostring(ResourceTags.DefenderEmailConfiguration)\\r\\n| extend EnableMDE=parse_json(DefederEmailConfiguration).EnableMDE\\r\\n| extend EnableMDI=parse_json(DefederEmailConfiguration).EnableMDI\\r\\n| extend EnableMDO=parse_json(DefederEmailConfiguration).EnableMDO\\r\\n| extend EnableMDA=parse_json(DefederEmailConfiguration).EnableMDA\\r\\n| extend UnifiedSentinel=parse_json(DefederEmailConfiguration).UnifiedSentinel\\r\\n| extend EnableCopilot=parse_json(DefederEmailConfiguration).EnableCopilot\\r\\n| extend DestinationMail=parse_json(DefederEmailConfiguration).destinationMail\\r\\n| extend ConfigStatus = case(\\r\\n    isempty(DefederEmailConfiguration), \\\"❌ Config Missing\\\",\\r\\n    \\\"✅ Config Present\\\")\\r\\n| project name, id, resourceGroup, ConfigStatus, DestinationMail,\\r\\nMDE=case(EnableMDE==\\\"false\\\", \\\"❌\\\",\\\"✅\\\"),\\r\\nMDI=case(EnableMDI==\\\"false\\\", \\\"❌\\\",\\\"✅\\\"),\\r\\nMDO=case(EnableMDO==\\\"false\\\", \\\"❌\\\",\\\"✅\\\"),\\r\\nMDA=case(EnableMDA==\\\"false\\\", \\\"❌\\\",\\\"✅\\\"),\\r\\nUnifiedSentinel=case(UnifiedSentinel==\\\"false\\\", \\\"❌\\\",\\\"✅\\\"),\\r\\nSecurityCopilot=case(EnableCopilot==\\\"false\\\", \\\"❌\\\",\\\"✅\\\")\",\"size\":4,\"exportedParameters\":[{\"fieldName\":\"id\",\"parameterName\":\"ResourceId\",\"parameterType\":5},{\"fieldName\":\"DestinationMail\",\"parameterName\":\"DestinationMail\",\"parameterType\":5}],\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"crossComponentResources\":[\"{Subscription}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"name\",\"formatter\":5},{\"columnMatch\":\"ConfigStatus\",\"formatter\":5},{\"columnMatch\":\"DestinationMail\",\"formatter\":5}]},\"sortBy\":[],\"tileSettings\":{\"showBorder\":false},\"graphSettings\":{\"type\":0}},\"name\":\"QueryLogicApp\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"<h2>LogicApp settings:</h2>\"},\"name\":\"text - 1\"},{\"type\":1,\"content\":{\"json\":\"<p>Specify for which defender workloads you want to calculate the KPIs and to whom you want to send the info (you can add multiple semicolon-separated mail addresses):</p>\"},\"name\":\"text - destinationMail\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"cea43ad5-4daf-46bc-b348-fbaef059e3b8\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDE\",\"label\":\"Defender for Endpoint\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\" , \\\"selected\\\":true},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\"},{\"id\":\"f1cd2945-4bb4-472e-9a1f-b3d11d91a06b\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDI\",\"label\":\"Defender for Identity\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\" , \\\"selected\\\":true},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\"},{\"id\":\"09adaeef-2ab5-436c-a7bc-91149baabd15\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDA\",\"label\":\"Defender for Cloud Apps\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\" , \\\"selected\\\":true},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\"},{\"id\":\"77f1d0d7-9272-4a0d-8594-3f540b35d705\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDO\",\"label\":\"Defender for Office\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\"},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\",\"value\":\"true\"},{\"version\":\"KqlParameterItem/1.0\",\"name\":\"UnifiedSentinel\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\"},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\",\"label\":\"Sentinel Unified Portal\",\"value\":\"true\",\"id\":\"882c054d-ff94-4c20-b770-99d9c074fa53\"},{\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableCopilot\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n    { \\\"value\\\":\\\"true\\\", \\\"label\\\":\\\"Enabled\\\"},\\r\\n    { \\\"value\\\":\\\"false\\\", \\\"label\\\":\\\"Disabled\\\" }\\r\\n]\",\"label\":\"SecurityCopilot\",\"value\":\"false\",\"id\":\"eadfad42-195c-4c62-91c6-0d04b79253e6\"},{\"id\":\"a1c2b3d4-e5f6-4711-8222-334455667788\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"destinationMail\",\"label\":\"Destination mailboxes\",\"type\":1,\"query\":\"Resources\\r\\n| take 1\\r\\n| project destinationMail = '{DestinationMail}'\",\"crossComponentResources\":[\"{Subscription}\"],\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"value\":\"\"}],\"style\":\"formHorizontal\",\"queryType\":0,\"resourceType\":\"microsoft.operationalinsights/workspaces\"},\"name\":\"parameters - 0\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"paragraph\",\"links\":[{\"id\":\"1678b223-1a29-4fae-8d77-09444832b199\",\"linkTarget\":\"ArmAction\",\"linkLabel\":\"Apply Configuration\",\"style\":\"primary\",\"linkIsContextBlade\":true,\"armActionContext\":{\"path\":\"{ResourceId}/providers/Microsoft.Resources/tags/default?api-version=2022-09-01\",\"headers\":[],\"params\":[],\"body\":\"{\\r\\n        \\\"operation\\\": \\\"Merge\\\",\\r\\n        \\\"properties\\\": {\\r\\n          \\\"tags\\\": {\\r\\n            \\\"DefenderEmailConfiguration\\\": \\\"{ \\\\\\\"EnableMDE\\\\\\\": \\\\\\\"{EnableMDE}\\\\\\\", \\\\\\\"EnableMDO\\\\\\\": \\\\\\\"{EnableMDO}\\\\\\\", \\\\\\\"EnableMDA\\\\\\\": \\\\\\\"{EnableMDA}\\\\\\\", \\\\\\\"EnableMDI\\\\\\\": \\\\\\\"{EnableMDI}\\\\\\\", \\\\\\\"UnifiedSentinel\\\\\\\": \\\\\\\"{UnifiedSentinel}\\\\\\\", \\\\\\\"EnableCopilot\\\\\\\": \\\\\\\"{EnableCopilot}\\\\\\\", \\\\\\\"destinationMail\\\\\\\": \\\\\\\"{destinationMail}\\\\\\\"}\\\"\\r\\n          }\\r\\n        }\\r\\n      }\",\"httpMethod\":\"PATCH\",\"description\":\"# Actions can potentially modify resources.\\n## Please use caution and include a confirmation message in this description when authoring this command.\"}}]},\"name\":\"links - 2\"}]},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"\"},\"name\":\"EditConfig\",\"styleSettings\":{\"maxWidth\":\"100%\"}}],\"isLocked\":false,\"fallbackResourceIds\":[\"azure monitor\"]}",
+        "version": "1.0",
+        "sourceId": "Azure Monitor",
+        "category": "workbook"
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2017-07-01",
+      "name": "[parameters('logicApp_name')]",
+      "location": "[resourceGroup().location]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": {
+        "DefenderEmailConfiguration": "[string(variables('defenderEmailConfig'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/connections', parameters('office365_connection_name'))]",
+        "[resourceId('Microsoft.Web/connections', parameters('securitycopilot_connection_name'))]"
+      ],
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "destinationMail": {
+              "type": "String",
+              "defaultValue": "[parameters('destinationMail')]"
+            },
+            "$connections": {
+              "type": "Object",
+              "defaultValue": {}
+            }
+          },
+          "triggers": {
+            "Every_morning": {
+              "type": "Recurrence",
+              "recurrence": {
+                "frequency": "Day",
+                "interval": 1,
+                "timeZone": "W. Europe Standard Time",
+                "schedule": {
+                  "hours": [
+                    6
+                  ],
+                  "minutes": [
+                    0
+                  ]
+                }
+              }
+            }
+          },
+          "actions": {
+            "Get_LogicApp_Resource": {
+              "type": "Http",
+              "runAfter": {},
+              "inputs": {
+                "method": "GET",
+                "uri": "@{concat('https://management.azure.com', workflow().id, '?api-version=2019-05-01')}",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "audience": "https://management.azure.com/"
+                }
+              }
+            },
+            "Init_Tags": {
+              "type": "InitializeVariable",
+              "runAfter": {
+                "Get_LogicApp_Resource": [
+                  "Succeeded",
+                  "Failed",
+                  "TimedOut",
+                  "Skipped"
+                ]
+              },
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "logicAppTags",
+                    "type": "object",
+                    "value": "@coalesce(outputs('Get_LogicApp_Resource')?['body']?['tags'], json('{}'))"
+                  }
+                ]
+              }
+            },
+            "Parse_DefenderEmailConfiguration": {
+              "type": "ParseJson",
+              "runAfter": {
+                "Init_Tags": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "content": "@coalesce(variables('logicAppTags')?['DefenderEmailConfiguration'], '{\"EnableMDE\":\"true\",\"EnableMDI\":\"true\",\"EnableMDO\":\"true\",\"EnableMDA\":\"true\",\"UnifiedSentinel\":\"true\",\"EnableCopilot\":\"false\"}')",
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "EnableMDE": {},
+                    "EnableMDI": {},
+                    "EnableMDO": {},
+                    "EnableMDA": {},
+                    "UnifiedSentinel": {},
+                    "destinationMail": {},
+                    "EnableCopilot": {}
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "Init_KQL": {
+              "type": "InitializeVariable",
+              "runAfter": {
+                "Parse_DefenderEmailConfiguration": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "kql_active_devices",
+                    "type": "string",
+                    "value": "let window = 1d; DeviceInfo | where Timestamp >= ago(window) | where OnboardingStatus == \"Onboarded\" | summarize TotalOnboarded = dcount(DeviceId)"
+                  },
+                  {
+                    "name": "kql_new_alerts",
+                    "type": "string",
+                    "value": "let window = 24h; AlertInfo | where Timestamp >= ago(window) | summarize NewAlerts = dcount(AlertId)"
+                  },
+                  {
+                    "name": "kql_incidents_closed_SLA",
+                    "type": "string",
+                    "value": "let window = 24h; let SLATime=24; SecurityIncident | where TimeGenerated >= ago(window) | where Status == \"Closed\" | extend ResolutionTimeHours = datetime_diff('hour', ClosedTime, CreatedTime) | summarize SLA_Compliance = countif(ResolutionTimeHours <= SLATime), Total = count() | extend PIncidentsClosedInSLA = 100.0 * SLA_Compliance / Total | project PIncidentsClosedInSLA"
+                  },
+                  {
+                    "name": "kql_new_discovered_apps",
+                    "type": "string",
+                    "value": "CloudAppEvents | where Timestamp > ago(30d) | summarize FirstSeenInWindow = min(Timestamp) by ApplicationId | where FirstSeenInWindow > ago(24h) | summarize UniqueApps = dcount(ApplicationId)"
+                  },
+                  {
+                    "name": "kql_devices_no_telemetry",
+                    "type": "string",
+                    "value": "let stale_window = 3d; DeviceInfo | where OnboardingStatus == \"Onboarded\" | summarize LastSeen = max(Timestamp) by DeviceId | where LastSeen < ago(stale_window) | summarize DevicesWithoutTelemetry = dcount(DeviceId)"
+                  },
+                  {
+                    "name": "kql_top3_users_alert_volume",
+                    "type": "string",
+                    "value": "let window = 30d; AlertEvidence | where Timestamp >= ago(window) | where EntityType == \"User\" | join kind=leftouter ( IdentityInfo | where Timestamp >= ago(30d) | summarize arg_max(Timestamp,*) by AccountUpn) on AccountUpn | summarize AlertCount = count() by AccountUpn, RiskLevel | top 3 by AlertCount desc"
+                  },
+                  {
+                    "name": "kql_top3_devices_alert_volume",
+                    "type": "string",
+                    "value": "let window = 30d; AlertEvidence | where Timestamp >= ago(window) and isnotempty(DeviceId) | summarize by AlertId, DeviceId, DeviceName | summarize Alerts=dcount(AlertId) by DeviceId, DeviceName | top 3 by Alerts desc"
+                  },
+                  {
+                    "name": "kql_high_exposure_devices",
+                    "type": "string",
+                    "value": "let window = 30d; DeviceInfo | where Timestamp > ago(window) | summarize arg_max(Timestamp, *) by DeviceId | where ExposureLevel == \"High\" | summarize HighExposureDevices = dcount(DeviceId)"
+                  },
+                  {
+                    "name": "kql_top_cves_by_exposed_devices",
+                    "type": "string",
+                    "value": "let N = 3; DeviceTvmSoftwareVulnerabilities | summarize ExposedDevices = dcount(DeviceId) by CveId | top N by ExposedDevices desc | project CveId, ExposedDevices"
+                  },
+                  {
+                    "name": "kql_pct_patchable_now",
+                    "type": "string",
+                    "value": "let exposed = DeviceTvmSoftwareVulnerabilities | summarize by DeviceId; let patchable = DeviceTvmSoftwareVulnerabilities | where isnotempty(RecommendedSecurityUpdateId) or isnotempty(RecommendedSecurityUpdate) | summarize by DeviceId; let total = toscalar(exposed  | summarize Total=dcount(DeviceId)); let withUpdate = toscalar(patchable | summarize Patchable=dcount(DeviceId)); print ExposedDevices=total, WithRecommendedUpdate=withUpdate, PctWithRecommendedUpdate=iff(total == 0, 0.0, 100.0 * todouble(withUpdate) / todouble(total))"
+                  },
+                  {
+                    "name": "kql_cves_public_exploits",
+                    "type": "string",
+                    "value": "let tenant_cves = DeviceTvmSoftwareVulnerabilities | distinct CveId; DeviceTvmSoftwareVulnerabilitiesKB | where IsExploitAvailable == true | distinct CveId | join kind=inner tenant_cves on CveId | summarize CVEsWithPublicExploits = dcount(CveId)"
+                  },
+                  {
+                    "name": "kql_devices_exposed_zeroDayNoFix",
+                    "type": "string",
+                    "value": "let zeroDayNoFix = DeviceTvmSoftwareVulnerabilities | where tostring(CveTags) has_any (\"ZeroDay\",\"NoSecurityUpdate\") | distinct CveId; DeviceTvmSoftwareVulnerabilities | where CveId in (zeroDayNoFix) | summarize DevicesExposed = dcount(DeviceId)"
+                  },
+                  {
+                    "name": "kql_new_high_sev_vulns_24h",
+                    "type": "string",
+                    "value": "let window = 24h; let recent_high_kb = DeviceTvmSoftwareVulnerabilitiesKB | where isnotempty(PublishedDate) and PublishedDate >= ago(window) | where VulnerabilitySeverityLevel in (\"High\",\"Critical\") | project CveId, VulnerabilitySeverityLevel, PublishedDate; DeviceTvmSoftwareVulnerabilities | where CveId in (recent_high_kb | project CveId) | distinct CveId | summarize NewHighSeverityCVEs = dcount(CveId)"
+                  },
+                  {
+                    "name": "kql_top3_users_phishing_volume",
+                    "type": "string",
+                    "value": "let window = 3d; EmailEvents | where Timestamp >= ago(window) | extend ThreatTypes = column_ifexists(\"ThreatTypes\", dynamic([])) | where tostring(ThreatTypes) has \"Phish\" | summarize PhishMessages = count() by RecipientEmailAddress | top 3 by PhishMessages desc"
+                  }
+                ]
+              }
+            },
+            "Init_EmailSections": {
+              "type": "InitializeVariable",
+              "runAfter": {
+                "Init_KQL": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "sec_MDE",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_MDI",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_MDO",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_MDA",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_Sentinel",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_Copilot",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
+                    "name": "sec_RiskThemes",
+                    "type": "string",
+                    "value": ""
+                  }
+                ]
+              }
+            },
+            "Condition_EnableCopilot": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['EnableCopilot']), 'false')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "Security_Advisory_Copilot": {
+                  "type": "ApiConnection",
+                  "runAfter": {},
+                  "inputs": {
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/process-prompt",
+                    "body": {
+                      "PromptContent": "Which threats should I focus on based upon their exposure scores?\nReturn ONLY this HTML:\n<h2>🔐 Top 5 Threats Based on Exposure Scores</h2>\n<ol>\n  <li><strong>Threat Name</strong> – short explanation (max 2 sentences). Include exposure score.</li>\n  <li>...</li>\n</ol>\nDo not include any JSON, markdown, backticks, or extra text."
+                    }
+                  }
+                },
+                "Compose_CleanCopilotHTML": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Security_Advisory_Copilot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@replace(replace(body('Security_Advisory_Copilot')?['evaluationResultContent'], '```html', ''), '```', '')"
+                },
+                "Set_variable_sec_Copilot": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Compose_CleanCopilotHTML": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_Copilot",
+                    "value": "<div class=\\\"h2\\\"><strong>🔐 Security Copilot Advisor </strong></div><div class=\\\"card\\\">@{outputs('Compose_CleanCopilotHTML')}</div>"
+                  }
+                },
+                "Submit_RiskThemesPrompt": {
+                  "type": "ApiConnection",
+                  "runAfter": {
+                    "Set_variable_sec_Copilot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/process-prompt",
+                    "body": {
+                      "PromptContent": "From the latest incidents and alerts in Microsoft 365 Defender, identify the top 3 risk themes affecting our environment (for example phishing, endpoint exploitation, lateral movement, misconfiguration).\nFor each theme, provide:\n- A 1–2 sentence summary\n- Why it matters\n- One recommended action for the SOC or security engineering team.\nKeep the wording business-friendly, suitable for a daily KPI email.\nReturn ONLY this HTML:\n<h2>🔍 Top 3 Risk Themes</h2>\n<ol>\n  <li><strong>Theme Name</strong><br/>Summary: ...<br/><em>Why it matters:</em> ...<br/><em>Recommended action:</em> ...</li>\n  <li>...</li>\n</ol>\nDo not include any JSON, markdown, backticks, or extra text."
+                    }
+                  }
+                },
+                "Compose_CleanRiskThemesHTML": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Submit_RiskThemesPrompt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@replace(replace(body('Submit_RiskThemesPrompt')?['evaluationResultContent'], '```html', ''), '```', '')"
+                },
+                "Set_variable_sec_RiskThemes": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Compose_CleanRiskThemesHTML": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_RiskThemes",
+                    "value": "<div class=\\\"h2\\\"><strong>🔍 SOC Recommendations</strong></div><div class=\\\"card\\\">@{outputs('Compose_CleanRiskThemesHTML')}</div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Condition_EnableMDE": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['EnableMDE']), 'true')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "AH_ActiveDevices": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_active_devices')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_ActiveDevices": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_ActiveDevices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_ActiveDevices')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_TotalOnboarded": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_ActiveDevices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_ActiveDevices')?['results'])?['TotalOnboarded'], 0)"
+                },
+                "AH_NewEndpointAlerts": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_new_alerts')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_NewEndpointAlerts": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_NewEndpointAlerts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_NewEndpointAlerts')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_NewEndpointAlerts": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_NewEndpointAlerts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_NewEndpointAlerts')?['results'])?['NewAlerts'], 0)"
+                },
+                "AH_DevicesNoTelemetry": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_devices_no_telemetry')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_DevicesNoTelemetry": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_DevicesNoTelemetry": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_DevicesNoTelemetry')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_DevicesWithoutTelemetry": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_DevicesNoTelemetry": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_DevicesNoTelemetry')?['results'])?['DevicesWithoutTelemetry'], 0)"
+                },
+                "AH_Top3DevicesAlertVolume": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_top3_devices_alert_volume')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_Top3DevicesAlertVolume": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_Top3DevicesAlertVolume": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_Top3DevicesAlertVolume')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "HTML_TopDevices": {
+                  "type": "Table",
+                  "runAfter": {
+                    "Parse_Top3DevicesAlertVolume": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@coalesce(body('Parse_Top3DevicesAlertVolume')?['results'], json('[]'))",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "Device Name",
+                        "value": "@{coalesce(item()?['DeviceName'], '-')}"
+                      },
+                      {
+                        "header": "Device ID",
+                        "value": "@{coalesce(item()?['DeviceId'], '-')}"
+                      },
+                      {
+                        "header": "Alerts",
+                        "value": "@{coalesce(item()?['Alerts'], 0)}"
+                      }
+                    ]
+                  }
+                },
+                "AH_HighExposureDevices": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_high_exposure_devices')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_HighExposureDevices": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_HighExposureDevices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_HighExposureDevices')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_HighExposureDevices": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_HighExposureDevices": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_HighExposureDevices')?['results'])?['HighExposureDevices'], 0)"
+                },
+                "AH_TopCVEs": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_top_cves_by_exposed_devices')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_TopCVEs": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_TopCVEs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_TopCVEs')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "HTML_TopCVEs": {
+                  "type": "Table",
+                  "runAfter": {
+                    "Parse_TopCVEs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@coalesce(body('Parse_TopCVEs')?['results'], json('[]'))",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "CVE ID",
+                        "value": "@{coalesce(item()?['CveId'], '-')}"
+                      },
+                      {
+                        "header": "Exposed Devices",
+                        "value": "@{coalesce(item()?['ExposedDevices'], 0)}"
+                      }
+                    ]
+                  }
+                },
+                "AH_PctPatchable": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_pct_patchable_now')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_PctPatchable": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_PctPatchable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_PctPatchable')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_ExposedDevicesTotal": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_PctPatchable": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_PctPatchable')?['results'])?['ExposedDevices'], 0)"
+                },
+                "Get_WithRecommendedUpdate": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Get_ExposedDevicesTotal": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_PctPatchable')?['results'])?['WithRecommendedUpdate'], 0)"
+                },
+                "Get_PctPatchable": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Get_WithRecommendedUpdate": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_PctPatchable')?['results'])?['PctWithRecommendedUpdate'], 0.0)"
+                },
+                "AH_PublicExploits": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_cves_public_exploits')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_PublicExploits": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_PublicExploits": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_PublicExploits')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_CVEsWithPublicExploits": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_PublicExploits": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_PublicExploits')?['results'])?['CVEsWithPublicExploits'], 0)"
+                },
+                "AH_ZeroDayNoFix": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_devices_exposed_zeroDayNoFix')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_ZeroDayNoFix": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_ZeroDayNoFix": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_ZeroDayNoFix')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_DevicesExposedZeroDayNoFix": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_ZeroDayNoFix": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_ZeroDayNoFix')?['results'])?['DevicesExposed'], 0)"
+                },
+                "AH_NewHighSevCVEs": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_new_high_sev_vulns_24h')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_NewHighSevCVEs": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_NewHighSevCVEs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_NewHighSevCVEs')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_NewHighSeverityCVEs": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_NewHighSevCVEs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_NewHighSevCVEs')?['results'])?['NewHighSeverityCVEs'], 0)"
+                },
+                "Set_sec_MDE": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Get_TotalOnboarded": [
+                      "Succeeded"
+                    ],
+                    "Get_NewEndpointAlerts": [
+                      "Succeeded"
+                    ],
+                    "Get_DevicesWithoutTelemetry": [
+                      "Succeeded"
+                    ],
+                    "HTML_TopDevices": [
+                      "Succeeded"
+                    ],
+                    "Get_HighExposureDevices": [
+                      "Succeeded"
+                    ],
+                    "Get_ExposedDevicesTotal": [
+                      "Succeeded"
+                    ],
+                    "Get_WithRecommendedUpdate": [
+                      "Succeeded"
+                    ],
+                    "Get_PctPatchable": [
+                      "Succeeded"
+                    ],
+                    "Get_CVEsWithPublicExploits": [
+                      "Succeeded"
+                    ],
+                    "Get_DevicesExposedZeroDayNoFix": [
+                      "Succeeded"
+                    ],
+                    "Get_NewHighSeverityCVEs": [
+                      "Succeeded"
+                    ],
+                    "HTML_TopCVEs": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_MDE",
+                    "value": "<a href=\"https://security.microsoft.com/reports\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>📊 Health KPIs</strong></div></a> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_TotalOnboarded')}</div> <div class=\"l\">Active onboarded devices (last 24h)</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_NewEndpointAlerts')}</div> <div class=\"l\">New alerts (last 24h)</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_DevicesWithoutTelemetry')}</div> <div class=\"l\">Devices w/out telemetry (in last 3d)</div> </div> </div> <a href=\"https://security.microsoft.com/tvm-event-insights\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>🛡️ Vulnerability posture &amp; movement</strong></div></a> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_HighExposureDevices')}</div> <div class=\"l\">Highly exposed devices</div> </div> <div class=\"card\"> <div class=\"v\">@{formatNumber(outputs('Get_PctPatchable'),'N1')} %</div> <div class=\"l\">Exposed devices with update available</div> <div class=\"l\" style=\"margin-top:6px\"> @{outputs('Get_WithRecommendedUpdate')} / @{outputs('Get_ExposedDevicesTotal')} devices </div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_CVEsWithPublicExploits')}</div> <div class=\"l\">CVEs with public exploits</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_DevicesExposedZeroDayNoFix')}</div> <div class=\"l\">Devices exposed to ZeroDay/NoFix</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_NewHighSeverityCVEs')}</div> <div class=\"l\">New High/Critical CVEs (published in last 24h)</div> </div> </div> <a href=\"https://security.microsoft.com/vulnerabilities/cves\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>🔥 Top CVEs by exposed devices</strong></div></a> <div class=\"card\"> @{body('HTML_TopCVEs')} </div> <a href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>🏆 Top machines by alert volume (30d)</strong></div></a> <div class=\"card\"> @{body('HTML_TopDevices')} </div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Condition_EnableMDI": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['EnableMDI']), 'true')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "AH_Top3UsersAlertVolume": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_top3_users_alert_volume')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_Top3UsersAlertVolume": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_Top3UsersAlertVolume": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_Top3UsersAlertVolume')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "HTML_TopUsersAlerts": {
+                  "type": "Table",
+                  "runAfter": {
+                    "Parse_Top3UsersAlertVolume": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@coalesce(body('Parse_Top3UsersAlertVolume')?['results'], json('[]'))",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "User (UPN)",
+                        "value": "@{coalesce(item()?['AccountUpn'], '-')}"
+                      },
+                      {
+                        "header": "Risk level",
+                        "value": "@{coalesce(item()?['RiskLevel'], '-')}"
+                      },
+                      {
+                        "header": "Alert count",
+                        "value": "@{coalesce(item()?['AlertCount'], 0)}"
+                      }
+                    ]
+                  }
+                },
+                "Set_sec_MDI": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "HTML_TopUsersAlerts": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_MDI",
+                    "value": "<a href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>🏆 Top users by alert volume (30d)</strong></div></a> <div class=\"card\"> @{body('HTML_TopUsersAlerts')} </div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Condition_EnableMDO": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['EnableMDO']), 'true')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "AH_Top3UsersPhishing": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_top3_users_phishing_volume')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_Top3UsersPhishing": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_Top3UsersPhishing": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_Top3UsersPhishing')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "HTML_TopPhishingUsers": {
+                  "type": "Table",
+                  "runAfter": {
+                    "Parse_Top3UsersPhishing": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@coalesce(body('Parse_Top3UsersPhishing')?['results'], json('[]'))",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "Recipient",
+                        "value": "@{coalesce(item()?['RecipientEmailAddress'], '-')}"
+                      },
+                      {
+                        "header": "Phish messages (3d)",
+                        "value": "@{coalesce(item()?['PhishMessages'], 0)}"
+                      }
+                    ]
+                  }
+                },
+                "Set_sec_MDO": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "HTML_TopPhishingUsers": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_MDO",
+                    "value": "<a href=\"https://security.microsoft.com/realtimereportsv3\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>🎣 Top users targeted by phishing emails (3d)</strong></div></a> <div class=\"card\"> @{body('HTML_TopPhishingUsers')} </div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Condition_EnableMDA": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['EnableMDA']), 'true')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "AH_NewDiscoveredApps": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_new_discovered_apps')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_NewDiscoveredApps": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_NewDiscoveredApps": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_NewDiscoveredApps')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_NewDiscoveredApps": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_NewDiscoveredApps": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_NewDiscoveredApps')?['results'])?['UniqueApps'], 0)"
+                },
+                "Set_sec_MDA": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Get_NewDiscoveredApps": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_MDA",
+                    "value": "<a href=\"https://security.microsoft.com/cloudapps/discovery\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>☁️ Cloud app discovery</strong></div></a> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_NewDiscoveredApps')}</div> <div class=\"l\">New discovered apps (last 24h)</div> </div> </div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Condition_UnifiedSentinel": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(body('Parse_DefenderEmailConfiguration')?['UnifiedSentinel']), 'true')), 'true')",
+              "runAfter": {
+                "Init_EmailSections": [
+                  "Succeeded"
+                ]
+              },
+              "actions": {
+                "AH_IncidentsClosedSLA": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_incidents_closed_SLA')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_IncidentsClosedSLA": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "AH_IncidentsClosedSLA": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('AH_IncidentsClosedSLA')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_PIncidentsClosedInSLA": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_IncidentsClosedSLA": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_IncidentsClosedSLA')?['results'])?['PIncidentsClosedInSLA'], 0.0)"
+                },
+                "Set_sec_Sentinel": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Get_PIncidentsClosedInSLA": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_Sentinel",
+                    "value": "<a href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"text-decoration: none; color: black;\"><div class=\"h2\"><strong>📟 SOC operations</strong></div></a> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{if(equals(outputs('Get_PIncidentsClosedInSLA'),'NaN'),'N/A',concat(formatNumber(float(outputs('Get_PIncidentsClosedInSLA')), 'N1'), '%'))}</div> <div class=\"l\">Incidents closed within 24h</div> </div> </div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Compose_EmailBody": {
+              "type": "Compose",
+              "runAfter": {
+                "Condition_EnableMDE": [
+                  "Succeeded"
+                ],
+                "Condition_EnableMDI": [
+                  "Succeeded"
+                ],
+                "Condition_EnableMDO": [
+                  "Succeeded"
+                ],
+                "Condition_EnableMDA": [
+                  "Succeeded"
+                ],
+                "Condition_UnifiedSentinel": [
+                  "Succeeded"
+                ],
+                "Condition_EnableCopilot": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": "<title>Defender KPIs</title> <style> body { margin: 0; padding: 0; background: #f5f6f8; font-family: Segoe UI, Arial, sans-serif } .wrapper { width: 100%; background: #f5f6f8; padding: 24px 0 } .container { max-width: 640px; margin: 0 auto; background: #fff } .header { background: #1f3a66; color: #fff; padding: 20px 24px; font-size: 22px; font-weight: 600 } .subheader { background: #0a66c2; color: #fff; padding: 8px 24px; font-size: 13px; font-weight: 600 } .content { padding: 24px; color: #111827; font-size: 14px; line-height: 1.5 } .h2 { font-size: 16px; margin: 24px 0 8px } .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fafafa; margin-bottom: 20px } table { width: 100%; border-collapse: collapse; font-size: 13px } th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left } th { background: #f3f4f6 } .footer { color: #6b7280; font-size: 12px; padding: 16px 24px 24px } .kpi { display: flex; gap: 12px; flex-wrap: wrap } .kpi .card { flex: 1; min-width: 180px } .kpi .v { font-size: 22px; font-weight: 700 } .kpi .l { color: #6b7280 } </style> <div class=\"wrapper\"> <table class=\"container\" cellspacing=\"0\" cellpadding=\"0\"> <tbody> <tr> <td class=\"header\">Microsoft 365 Defender</td> </tr> <tr> <td class=\"subheader\">Daily snapshot</td> </tr> <tr> <td class=\"content\"> <p>As of <strong>@{formatDateTime(utcNow(),'dddd, dd MMMM yyyy HH:mm')} (UTC)</strong> </p> @{variables('sec_MDE')} @{variables('sec_MDI')} @{variables('sec_MDO')} @{variables('sec_MDA')} @{variables('sec_Sentinel')} @{variables('sec_Copilot')} @{variables('sec_RiskThemes')} <p style=\"margin-top:20px; text-align:center;\"> <a class=\"btn\" style=\"display:inline-block;text-decoration:none;background:#0a66c2;color:#fff;padding:10px 16px;border-radius:6px;font-weight:600;\" href=\"https://security.microsoft.com\">Open Defender portal →</a> </p> </td> </tr> <tr> <td class=\"footer\"> This notification was generated by a Logic App and powered by Microsoft Defender </td> </tr> </tbody> </table> </div>"
+            },
+            "Send_Email": {
+              "type": "ApiConnection",
+              "runAfter": {
+                "Compose_EmailBody": [
+                  "Succeeded"
+                ]
+              },
+              "inputs": {
+                "host": {
+                  "connection": {
+                    "name": "@parameters('$connections')['office365-1']['connectionId']"
+                  }
+                },
+                "method": "post",
+                "body": {
+                  "To": "@coalesce(body('Parse_DefenderEmailConfiguration')?['destinationMail'], parameters('destinationMail'))",
+                  "Subject": "Microsoft Defender KPIs – @{formatDateTime(utcNow(),'yyyy-MM-dd')}",
+                  "Body": "@outputs('Compose_EmailBody')",
+                  "Importance": "Normal"
+                },
+                "path": "/v2/Mail"
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {
+          "$connections": {
+            "value": {
+              "office365-1": {
+                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/office365')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('office365_connection_name'))]",
+                "connectionName": "[parameters('office365_connection_name')]"
+              },
+              "securitycopilot": {
+                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/securitycopilot')]",
+                "connectionId": "[resourceId('Microsoft.Web/connections', parameters('securitycopilot_connection_name'))]",
+                "connectionName": "[parameters('securitycopilot_connection_name')]"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {}
+}
