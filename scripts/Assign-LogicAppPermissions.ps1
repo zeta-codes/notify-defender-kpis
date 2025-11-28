@@ -21,7 +21,7 @@
       * Owner / User Access Administrator on the Logic App scope for the RBAC assignment.
 
 .EXAMPLE
-  ./assign-logicapp-mi-threathunting.ps1 -ResourceGroup "<RG-NAME>" -WorkflowName "<LOGICAPP-NAME>" -TenantId "<TENANT-ID>" -SubscriptionId "<SUBSCRIPTION-ID>"
+  ./Assign-LogicAppPermissions.ps1 -ResourceGroup "<RG-NAME>" -WorkflowName "<LOGICAPP-NAME>" -TenantId "<TENANT-ID>" -SubscriptionId "<SUBSCRIPTION-ID>"
 #>
 
 param(
