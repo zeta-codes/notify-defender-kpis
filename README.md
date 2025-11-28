@@ -29,6 +29,31 @@ This project contains:
 
 ---
 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzeta-codes%2Fnotify-defender-kpis%2Frefs%2Fheads%2Fmain%2Ftemplates%2Fnotify-defender-kpis.json)
+
+---
+
+## Quick Deploy
+
+1. Click **Deploy to Azure** above.
+2. Choose **Subscription** and **Resource Group**.
+3. Fill in the parameters (see below).
+4. Click **Review + create → Create**.
+5. Run the **permissions script** and complete post-deploy steps.
+
+---
+
+### Parameters
+
+| Parameter                      | Example / Default        | Description                                                                 |
+|--------------------------------|--------------------------|-----------------------------------------------------------------------------|
+| `logicApp_name`                | `NotifyDefenderKPIs`     | Name of the Logic App workflow.                                            |
+| `office365_connection_name`    | `office365-conn`         | Name of the Office 365 Outlook connection resource.                        |
+| `securitycopilot_connection_name` | `securitycopilot-conn` | Name of the Security Copilot connection resource (optional if unused).     |
+| `destinationMail`              | `soc@contoso.com;secops@contoso.com` | Semicolon-separated list of recipient email addresses for the KPI email. |
+
+---
+
 ## Repository structure
 
 ```text
