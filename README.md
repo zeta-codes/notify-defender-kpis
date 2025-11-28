@@ -167,14 +167,18 @@ You can change this in the Logic App designer if you want different timing.
 ![Workbook screenshot](./img/workbook-overview.png)
 *Figure 1: Workbook to configure workloads and recipients*
 
+
 ![Example email screenshot](./img/email-sample01.png)
 *Figure 2: Example daily Microsoft 365 Defender KPI email*
+
 
 ![Example email screenshot](./img/email-sample02.png)
 *Figure 2: Example daily Microsoft 365 Defender KPI email*
 
+
 ![Example email screenshot](./img/email-sample03.png)
 *Figure 2: Example daily Microsoft 365 Defender KPI email*
+
 
 ![Example email screenshot](./img/email-sample04.png)
 *Figure 2: Example daily Microsoft 365 Defender KPI email*
