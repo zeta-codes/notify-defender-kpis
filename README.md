@@ -174,12 +174,12 @@ You can change this in the Logic App designer if you want different timing.
 
 
 ![Example email screenshot](./img/email-sample02.png)
-*Figure 2: Example daily Microsoft 365 Defender KPI email*
+*Figure 3: Example daily Microsoft 365 Defender KPI email*
 
 
 ![Example email screenshot](./img/email-sample03.png)
-*Figure 2: Example daily Microsoft 365 Defender KPI email*
+*Figure 4: Example daily Microsoft 365 Defender KPI email*
 
 
 ![Example email screenshot](./img/email-sample04.png)
-*Figure 2: Example daily Microsoft 365 Defender KPI email*
+*Figure 5: Example daily Microsoft 365 Defender KPI email*
