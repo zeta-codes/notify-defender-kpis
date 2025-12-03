@@ -54,7 +54,7 @@ foreach ($module in $requiredModules) {
 
     Import-Module -Name $module -ErrorAction Stop
 }
-
+ 
 # -----------------------------------------------------------------------------
 # 1) Set Az context to the right subscription (if provided)
 # -----------------------------------------------------------------------------
