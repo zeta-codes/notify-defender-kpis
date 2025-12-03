@@ -37,23 +37,23 @@ $ErrorActionPreference = 'Stop'
 # 0) Ensure required modules (install only if missing)
 # -----------------------------------------------------------------------------
 
-# Az.Accounts
-if (-not (Get-Module -ListAvailable -Name Az.Accounts)) {
-  Install-Module Az.Accounts -Scope CurrentUser -Force -AllowClobber
-}
-Import-Module Az.Accounts -ErrorAction Stop
+$requiredModules = @(
+    # Az modules
+    'Az.Accounts',
+    'Az.Resources',
+    # Microsoft Graph modules
+    'Microsoft.Graph.Authentication',
+    'Microsoft.Graph.Applications'
+)
 
-# Az.Resources
-if (-not (Get-Module -ListAvailable -Name Az.Resources)) {
-  Install-Module Az.Resources -Scope CurrentUser -Force -AllowClobber
-}
-Import-Module Az.Resources -ErrorAction Stop
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Write-Host "Installing module: $module" -ForegroundColor Cyan
+        Install-Module -Name $module -Scope CurrentUser -Force -AllowClobber
+    }
 
-# Microsoft.Graph (core module, loads meta-module)
-if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
-  Install-Module Microsoft.Graph -Scope CurrentUser -Force -AllowClobber
+    Import-Module -Name $module -ErrorAction Stop
 }
-Import-Module Microsoft.Graph -ErrorAction Stop
 
 # -----------------------------------------------------------------------------
 # 1) Set Az context to the right subscription (if provided)
