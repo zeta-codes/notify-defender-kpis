@@ -181,25 +181,77 @@ if ($existingGraph) {
 }
 
 # -----------------------------------------------------------------------------
-# 7) Exchange Online RBAC for Scoped Mail.Send
+# 7) Exchange Online RBAC for Scoped Mail.Send  (robust scope reuse)
 # -----------------------------------------------------------------------------
 Write-Host "`n=== Configuring Exchange Online RBAC for Scoped Mail.Send ===" -ForegroundColor Cyan
 
 Write-Host "Connecting to Exchange Online..."
 Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop | Out-Null
 
-$scopeName = "$($MiDisplayName)-SharedMailbox-Scope"
+# We want ONE scope per shared mailbox (per filter), not one per workflow.
 $scopeFilter = "Alias -eq '$SharedMailboxAlias'"
 
-$existingScope = Get-ManagementScope -Identity $scopeName -ErrorAction SilentlyContinue
+# Preferred/stable name (works across different workflows / managed identities)
+$scopeNamePreferred = "SharedMailbox-$SharedMailboxAlias-Scope"
+$scopeName = $scopeNamePreferred
+
+function Normalize-ExoFilter([string]$f) {
+  if ([string]::IsNullOrWhiteSpace($f)) { return "" }
+
+  # EXO may add parentheses / vary whitespace. Normalize hard.
+  $n = $f.Trim()
+  while ($n.StartsWith("(") -and $n.EndsWith(")")) { $n = $n.Trim("()").Trim() }
+  $n = ($n -replace '\s+', '')  # remove all whitespace for comparison
+  return $n
+}
+
+$targetNorm = Normalize-ExoFilter $scopeFilter
+
+# 1) Try to get the preferred scope name
+$existingScope = Get-ManagementScope -Identity $scopeNamePreferred -ErrorAction SilentlyContinue
+
+# 2) If not found, try to find ANY existing scope with the same RecipientRestrictionFilter (normalized)
+if (-not $existingScope) {
+  $existingScope = Get-ManagementScope -ErrorAction SilentlyContinue | Where-Object {
+    (Normalize-ExoFilter $_.RecipientRestrictionFilter) -eq $targetNorm
+  } | Select-Object -First 1
+
+  if ($existingScope) {
+    $scopeName = $existingScope.Name
+    Write-Host "Reusing existing Management Scope '$scopeName' (same filter: $scopeFilter)." -ForegroundColor Yellow
+  }
+}
+
+# 3) Create the scope only if none exists by name or by equivalent filter.
+#    If EXO still detects a duplicate-by-properties, parse the error and reuse that scope.
 if ($existingScope) {
   Write-Host "Management Scope '$scopeName' already exists." -ForegroundColor Yellow
 } else {
-  Write-Host "Creating Management Scope for shared mailbox: $SharedMailboxAlias"
-  New-ManagementScope -Name $scopeName -RecipientRestrictionFilter $scopeFilter -ErrorAction Stop | Out-Null
-  Write-Host "Created Management Scope: $scopeName" -ForegroundColor Green
+  Write-Host "Creating Management Scope '$scopeNamePreferred' for shared mailbox: $SharedMailboxAlias"
+  try {
+    New-ManagementScope -Name $scopeNamePreferred -RecipientRestrictionFilter $scopeFilter -ErrorAction Stop | Out-Null
+    $scopeName = $scopeNamePreferred
+    Write-Host "Created Management Scope: $scopeName" -ForegroundColor Green
+  }
+  catch {
+    # EXO duplicate-by-properties message includes the existing scope name, e.g.:
+    # "The <ScopeName> management scope has the same ... values that you specified."
+    if ($_.Exception.Message -match 'The\s+(.+?)\s+management scope has the same') {
+      $dupName = $matches[1]
+      $existingScope = Get-ManagementScope -Identity $dupName -ErrorAction SilentlyContinue
+      if ($existingScope) {
+        $scopeName = $existingScope.Name
+        Write-Host "Found duplicate scope by properties; reusing existing scope '$scopeName'." -ForegroundColor Yellow
+      } else {
+        throw
+      }
+    } else {
+      throw
+    }
+  }
 }
 
+# Ensure the service principal exists in EXO
 $existingServicePrincipal = Get-ServicePrincipal -Identity $MiObjectId -ErrorAction SilentlyContinue
 if ($existingServicePrincipal) {
   Write-Host "Service Principal already exists in Exchange Online (ObjectId: $MiObjectId)." -ForegroundColor Yellow
@@ -209,12 +261,13 @@ if ($existingServicePrincipal) {
   Write-Host "Created Service Principal: $MiDisplayName" -ForegroundColor Green
 }
 
+# Role assignment can remain per-workflow (unique name) but points to the shared mailbox scope
 $assignmentName = "$($MiDisplayName)-Mail.Send-$SharedMailboxAlias"
 $existingAssignment = Get-ManagementRoleAssignment -Identity $assignmentName -ErrorAction SilentlyContinue
 if ($existingAssignment) {
   Write-Host "Role assignment '$assignmentName' already exists." -ForegroundColor Yellow
 } else {
-  Write-Host "Creating scoped Mail.Send role assignment..."
+  Write-Host "Creating scoped Mail.Send role assignment (scope: $scopeName)..."
   New-ManagementRoleAssignment `
     -Name $assignmentName `
     -Role "Application Mail.Send" `
@@ -233,6 +286,7 @@ if ($testResult) {
 }
 
 Disconnect-ExchangeOnline -Confirm:$false | Out-Null
+
 
 # -----------------------------------------------------------------------------
 # 8) Summary
