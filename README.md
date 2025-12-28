@@ -2,7 +2,7 @@
 
 This Logic App **runs every day** and uses its managed identity to query **Microsoft Defender Advanced Hunting** to compute a set of daily **security KPIs**. It then assembles a "Daily snapshot" email (optionally enriched with Security Copilot advisor/risk-theme sections) and sends it to one or more semicolon-separated recipients. An **Azure Monitor Workbook** lets you configure which Defender workloads to include and who should receive the report.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzeta-codes%2Fnotify-defender-kpis%2Frefs%2Fheads%2Fvnext%2Ftemplates%2Fnotify-defender-kpis.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzeta-codes%2Fnotify-defender-kpis%2Frefs%2Fheads%2Fmain%2Ftemplates%2Fnotify-defender-kpis.json)
 
 ---
 
