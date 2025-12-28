@@ -2,7 +2,7 @@
 
 Sends a **daily Microsoft 365 Defender KPI email** to your security team. The Logic App runs hunting queries via **Microsoft Graph Security**, composes an HTML summary, and delivers it via e-mail. An **Azure Monitor Workbook** lets you choose which Defender workloads to include and who should receive the report.
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzeta-codes%2Fnotify-defender-kpis%2Frefs%2Fheads%2Fmain%2Ftemplates%2Fnotify-defender-kpis.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fzeta-codes%2Fnotify-defender-kpis%2Frefs%2Fheads%2F1.0%2Ftemplates%2Fnotify-defender-kpis.json)
 
 ---
 
