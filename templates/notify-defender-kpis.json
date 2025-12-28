@@ -26,7 +26,7 @@
     }
   },
   "variables": {
-    "workbookSerializedDataRaw": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"# Notify Defender KPIs Configuration\"},\"customWidth\":\"50\",\"name\":\"text - 3\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"33dfac39-778e-4904-b255-055776d64802\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Subscription\",\"type\":6,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"resourcecontainers\\r\\n| where type == \\\"microsoft.resources/subscriptions\\\"\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::all\"],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"8d25369f-adec-4a42-8576-2ec2651a2eb9\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"📖Help\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n { \\\"value\\\": \\\"Yes\\\", \\\"label\\\": \\\"Yes\\\"},\\r\\n { \\\"value\\\": \\\"No\\\", \\\"label\\\": \\\"No\\\", \\\"selected\\\":true },\\r\\n { \\\"value\\\": \\\"Changelog\\\", \\\"label\\\": \\\"Change Log\\\"}\\r\\n]\",\"timeContext\":{\"durationMs\":86400000}}],\"style\":\"pills\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"customWidth\":\"70\",\"name\":\"parameters - 1\",\"styleSettings\":{\"margin\":\"150\",\"maxWidth\":\"90%\"}},{\"type\":1,\"content\":{\"json\":\"## Help:\\r\\n\\r\\nUse this workbook to enable or disable the email sections for the different products.\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Yes\"},\"name\":\"text - 2\"},{\"type\":1,\"content\":{\"json\":\"## Changelog:\\r\\n\\r\\n### Version 1.1\\r\\nBug fix and set default on configuration toggle.\\r\\n\\r\\n### Version 1.0\\r\\nFirst release\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Changelog\"},\"name\":\"text - 3\"}],\"exportParameters\":true},\"name\":\"Title\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"resources\\r\\n| where type =~ 'microsoft.logic/workflows'\\r\\n| where id == '__LOGICAPP_RESOURCEID__'\\r\\n| project name, id, location, resourceGroup, subscriptionId, props = todynamic(properties)\\r\\n| extend prm = todynamic(props.parameters)\\r\\n| extend Definition  = replace_regex(tostring(props.definition), @\\\"\\\\r|\\\\n\\\", \\\"\\\")\\r\\n| extend Connections = replace_regex(tostring(prm['$connections']), @\\\"\\\\r|\\\\n\\\", \\\"\\\")\\r\\n| extend EnableMDE       = tostring(coalesce(prm.EnableMDE.value, \\\"true\\\"))\\r\\n| extend EnableMDI       = tostring(coalesce(prm.EnableMDI.value, \\\"true\\\"))\\r\\n| extend EnableMDO       = tostring(coalesce(prm.EnableMDO.value, \\\"true\\\"))\\r\\n| extend EnableMDA       = tostring(coalesce(prm.EnableMDA.value, \\\"true\\\"))\\r\\n| extend UnifiedSentinel = tostring(coalesce(prm.UnifiedSentinel.value, \\\"true\\\"))\\r\\n| extend EnableCopilot   = tostring(coalesce(prm.EnableCopilot.value, \\\"false\\\"))\\r\\n| extend DestinationMail = tostring(coalesce(prm.destinationMail.value, \\\"\\\"))\\r\\n| extend SenderMailbox = tostring(coalesce(prm.senderMailbox.value, \\\"\\\"))\\r\\n| extend Location = tostring(location)\\r\\n| extend ConfigStatus = case(isempty(DestinationMail), \\\"❌ Config Missing\\\", \\\"✅ Config Present\\\")\\r\\n| project name, id, resourceGroup, subscriptionId, ConfigStatus, DestinationMail, Definition, Connections, SenderMailbox, Location,\\r\\n  MDE=case(tolower(EnableMDE)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDI=case(tolower(EnableMDI)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDO=case(tolower(EnableMDO)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDA=case(tolower(EnableMDA)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  UnifiedSentinel=case(tolower(UnifiedSentinel)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  SecurityCopilot=case(tolower(EnableCopilot)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  PickerEnableMDE=EnableMDE,PickerEnableMDI=EnableMDI,PickerEnableMDO=EnableMDO,PickerEnableMDA=EnableMDA,\\r\\n  PickerUnifiedSentinel=UnifiedSentinel,PickerEnableCopilot=EnableCopilot\",\"size\":4,\"exportedParameters\":[{\"fieldName\":\"id\",\"parameterName\":\"ResourceId\",\"parameterType\":5},{\"fieldName\":\"DestinationMail\",\"parameterName\":\"DestinationMail\",\"parameterType\":5},{\"fieldName\":\"PickerEnableMDE\",\"parameterName\":\"PickerEnableMDE\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDO\",\"parameterName\":\"PickerEnableMDO\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDA\",\"parameterName\":\"PickerEnableMDA\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDI\",\"parameterName\":\"PickerEnableMDI\",\"parameterType\":1},{\"fieldName\":\"PickerUnifiedSentinel\",\"parameterName\":\"PickerUnifiedSentinel\",\"parameterType\":1},{\"fieldName\":\"PickerEnableCopilot\",\"parameterName\":\"PickerEnableCopilot\",\"parameterType\":1},{\"fieldName\":\"subscriptionId\",\"parameterName\":\"SubId\",\"parameterType\":5},{\"fieldName\":\"resourceGroup\",\"parameterName\":\"RgName\",\"parameterType\":5},{\"fieldName\":\"name\",\"parameterName\":\"LogicAppName\",\"parameterType\":5},{\"fieldName\":\"SenderMailbox\",\"parameterName\":\"SenderMailbox\",\"parameterType\":5},{\"fieldName\":\"Location\",\"parameterName\":\"Location\",\"parameterType\":5},{\"fieldName\":\"Definition\",\"parameterName\":\"Definition\",\"parameterType\":5},{\"fieldName\":\"Connections\",\"parameterName\":\"Connections\",\"parameterType\":5}],\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"crossComponentResources\":[\"{Subscription}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"name\",\"formatter\":5},{\"columnMatch\":\"subscriptionId\",\"formatter\":5},{\"columnMatch\":\"ConfigStatus\",\"formatter\":5},{\"columnMatch\":\"DestinationMail\",\"formatter\":5},{\"columnMatch\":\"Definition\",\"formatter\":5},{\"columnMatch\":\"Connections\",\"formatter\":5},{\"columnMatch\":\"SenderMailbox\",\"formatter\":5},{\"columnMatch\":\"Location\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDE\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDI\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDO\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDA\",\"formatter\":5},{\"columnMatch\":\"PickerUnifiedSentinel\",\"formatter\":5},{\"columnMatch\":\"PickerEnableCopilot\",\"formatter\":5}]},\"sortBy\":[],\"tileSettings\":{\"showBorder\":false},\"graphSettings\":{\"type\":0}},\"name\":\"QueryLogicApp\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"<h2>LogicApp settings:</h2>\"},\"name\":\"text - 1\"},{\"type\":1,\"content\":{\"json\":\"<p>Specify for which defender workloads you want to calculate the KPIs and to whom you want to send the info (you can add multiple semicolon-separated mail addresses):</p>\"},\"name\":\"text - destinationMail\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"cea43ad5-4daf-46bc-b348-fbaef059e3b8\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDE\",\"label\":\"Defender for Endpoint\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDE}=='true','true',''), value=='false', iff({PickerEnableMDE}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"f1cd2945-4bb4-472e-9a1f-b3d11d91a06b\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDI\",\"label\":\"Defender for Identity\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDI}=='true','true',''), value=='false', iff({PickerEnableMDI}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"09adaeef-2ab5-436c-a7bc-91149baabd15\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDA\",\"label\":\"Defender for Cloud Apps\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDA}=='true','true',''), value=='false', iff({PickerEnableMDA}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"77f1d0d7-9272-4a0d-8594-3f540b35d705\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDO\",\"label\":\"Defender for Office\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDO}=='true','true',''), value=='false', iff({PickerEnableMDO}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"882c054d-ff94-4c20-b770-99d9c074fa53\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"UnifiedSentinel\",\"label\":\"Sentinel Unified Portal\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerUnifiedSentinel}=='true','true',''), value=='false', iff({PickerUnifiedSentinel}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"eadfad42-195c-4c62-91c6-0d04b79253e6\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableCopilot\",\"label\":\"SecurityCopilot\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableCopilot}=='true','true',''), value=='false', iff({PickerEnableCopilot}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"a1c2b3d4-e5f6-4711-8222-334455667788\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"destinationMail\",\"label\":\"Destination mailboxes\",\"type\":1,\"query\":\"Resources\\r\\n| take 1\\r\\n| project destinationMail = '{DestinationMail}'\",\"crossComponentResources\":[\"{Subscription}\"],\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"}],\"style\":\"formHorizontal\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"name\":\"parameters - 0\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"paragraph\",\"links\":[{\"id\":\"1678b223-1a29-4fae-8d77-09444832b199\",\"linkTarget\":\"ArmAction\",\"linkLabel\":\"Apply Configuration\",\"style\":\"primary\",\"linkIsContextBlade\":true,\"armActionContext\":{\"path\":\"{ResourceId}?api-version=2019-05-01\",\"headers\":[],\"params\":[],\"body\":\"{\\r\\n    \\\"properties\\\": {\\r\\n        \\\"definition\\\": {Definition:json},\\r\\n        \\\"parameters\\\": {\\r\\n  \\\"EnableMDE\\\": { \\\"value\\\": \\\"{EnableMDE}\\\" },\\r\\n  \\\"EnableMDI\\\": { \\\"value\\\": \\\"{EnableMDI}\\\" },\\r\\n  \\\"EnableMDO\\\": { \\\"value\\\": \\\"{EnableMDO}\\\" },\\r\\n  \\\"EnableMDA\\\": { \\\"value\\\": \\\"{EnableMDA}\\\" },\\r\\n  \\\"UnifiedSentinel\\\": { \\\"value\\\": \\\"{UnifiedSentinel}\\\" },\\r\\n  \\\"EnableCopilot\\\": { \\\"value\\\": \\\"{EnableCopilot}\\\" },\\r\\n  \\\"destinationMail\\\": { \\\"value\\\": \\\"{destinationMail}\\\" },\\r\\n  \\\"senderMailbox\\\": { \\\"value\\\": \\\"{SenderMailbox}\\\" },\\r\\n  \\\"$connections\\\": {Connections:json}\\r\\n}\\r\\n\\r\\n    },\\r\\n    \\\"location\\\": \\\"{Location}\\\"\\r\\n}\",\"httpMethod\":\"PUT\",\"description\":\"# Actions can potentially modify resources.\\n## Please use caution and include a confirmation message in this description when authoring this command.\"}}]},\"name\":\"links - 2\"}]},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"\"},\"name\":\"EditConfig\",\"styleSettings\":{\"maxWidth\":\"100%\"}}],\"isLocked\":false,\"fallbackResourceIds\":[\"azure monitor\"]}", 
+    "workbookSerializedDataRaw": "{\"version\":\"Notebook/1.0\",\"items\":[{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"# Notify Defender KPIs Configuration\"},\"customWidth\":\"50\",\"name\":\"text - 3\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"33dfac39-778e-4904-b255-055776d64802\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"Subscription\",\"type\":6,\"isRequired\":true,\"multiSelect\":true,\"quote\":\"'\",\"delimiter\":\",\",\"query\":\"resourcecontainers\\r\\n| where type == \\\"microsoft.resources/subscriptions\\\"\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[\"value::all\"],\"showDefault\":false},\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"8d25369f-adec-4a42-8576-2ec2651a2eb9\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"📖Help\",\"type\":10,\"isRequired\":true,\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"jsonData\":\"[\\r\\n { \\\"value\\\": \\\"Yes\\\", \\\"label\\\": \\\"Yes\\\"},\\r\\n { \\\"value\\\": \\\"No\\\", \\\"label\\\": \\\"No\\\", \\\"selected\\\":true },\\r\\n { \\\"value\\\": \\\"Changelog\\\", \\\"label\\\": \\\"Change Log\\\"}\\r\\n]\",\"timeContext\":{\"durationMs\":86400000}}],\"style\":\"pills\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"customWidth\":\"70\",\"name\":\"parameters - 1\",\"styleSettings\":{\"margin\":\"150\",\"maxWidth\":\"90%\"}},{\"type\":1,\"content\":{\"json\":\"## Help:\\r\\n\\r\\nUse this workbook to enable or disable the email sections for the different products.\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Yes\"},\"name\":\"text - 2\"},{\"type\":1,\"content\":{\"json\":\"## Changelog:\\r\\n\\r\\n### Version 1.1\\r\\nBug fix and set default on configuration toggle.\\r\\n\\r\\n### Version 1.0\\r\\nFirst release\"},\"conditionalVisibility\":{\"parameterName\":\"📖Help\",\"comparison\":\"isEqualTo\",\"value\":\"Changelog\"},\"name\":\"text - 3\"}],\"exportParameters\":true},\"name\":\"Title\"},{\"type\":3,\"content\":{\"version\":\"KqlItem/1.0\",\"query\":\"resources\\r\\n| where type =~ 'microsoft.logic/workflows'\\r\\n| where id == '__LOGICAPP_RESOURCEID__'\\r\\n| project name, id, location, resourceGroup, subscriptionId, props = todynamic(properties)\\r\\n| extend prm = todynamic(props.parameters)\\r\\n| extend Definition  = replace_regex(tostring(props.definition), @\\\"\\\\r|\\\\n\\\", \\\"\\\")\\r\\n| extend Connections = replace_regex(tostring(prm['$connections']), @\\\"\\\\r|\\\\n\\\", \\\"\\\")\\r\\n| extend EnableMDE       = tostring(coalesce(prm.EnableMDE.value, \\\"true\\\"))\\r\\n| extend EnableMDI       = tostring(coalesce(prm.EnableMDI.value, \\\"true\\\"))\\r\\n| extend EnableMDO       = tostring(coalesce(prm.EnableMDO.value, \\\"true\\\"))\\r\\n| extend EnableMDA       = tostring(coalesce(prm.EnableMDA.value, \\\"true\\\"))\\r\\n| extend UnifiedSentinel = tostring(coalesce(prm.UnifiedSentinel.value, \\\"true\\\"))\\r\\n| extend EnableCopilot   = tostring(coalesce(prm.EnableCopilot.value, \\\"false\\\"))\\r\\n| extend DestinationMail = tostring(coalesce(prm.destinationMail.value, \\\"\\\"))\\r\\n| extend SenderMailbox = tostring(coalesce(prm.senderMailbox.value, \\\"\\\"))\\r\\n| extend Location = tostring(location)\\r\\n| extend ConfigStatus = case(isempty(DestinationMail), \\\"❌ Config Missing\\\", \\\"✅ Config Present\\\")\\r\\n| project name, id, resourceGroup, subscriptionId, ConfigStatus, DestinationMail, Definition, Connections, SenderMailbox, Location,\\r\\n  MDE=case(tolower(EnableMDE)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDI=case(tolower(EnableMDI)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDO=case(tolower(EnableMDO)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  MDA=case(tolower(EnableMDA)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  UnifiedSentinel=case(tolower(UnifiedSentinel)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  SecurityCopilot=case(tolower(EnableCopilot)==\\\"false\\\",\\\"❌\\\",\\\"✅\\\"),\\r\\n  PickerEnableMDE=EnableMDE,PickerEnableMDI=EnableMDI,PickerEnableMDO=EnableMDO,PickerEnableMDA=EnableMDA,\\r\\n  PickerUnifiedSentinel=UnifiedSentinel,PickerEnableCopilot=EnableCopilot\",\"size\":4,\"exportedParameters\":[{\"fieldName\":\"id\",\"parameterName\":\"ResourceId\",\"parameterType\":5},{\"fieldName\":\"DestinationMail\",\"parameterName\":\"DestinationMail\",\"parameterType\":5},{\"fieldName\":\"PickerEnableMDE\",\"parameterName\":\"PickerEnableMDE\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDO\",\"parameterName\":\"PickerEnableMDO\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDA\",\"parameterName\":\"PickerEnableMDA\",\"parameterType\":1},{\"fieldName\":\"PickerEnableMDI\",\"parameterName\":\"PickerEnableMDI\",\"parameterType\":1},{\"fieldName\":\"PickerUnifiedSentinel\",\"parameterName\":\"PickerUnifiedSentinel\",\"parameterType\":1},{\"fieldName\":\"PickerEnableCopilot\",\"parameterName\":\"PickerEnableCopilot\",\"parameterType\":1},{\"fieldName\":\"subscriptionId\",\"parameterName\":\"SubId\",\"parameterType\":5},{\"fieldName\":\"resourceGroup\",\"parameterName\":\"RgName\",\"parameterType\":5},{\"fieldName\":\"name\",\"parameterName\":\"LogicAppName\",\"parameterType\":5},{\"fieldName\":\"SenderMailbox\",\"parameterName\":\"SenderMailbox\",\"parameterType\":5},{\"fieldName\":\"Location\",\"parameterName\":\"Location\",\"parameterType\":5},{\"fieldName\":\"Definition\",\"parameterName\":\"Definition\",\"parameterType\":5},{\"fieldName\":\"Connections\",\"parameterName\":\"Connections\",\"parameterType\":5}],\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\",\"crossComponentResources\":[\"{Subscription}\"],\"gridSettings\":{\"formatters\":[{\"columnMatch\":\"name\",\"formatter\":5},{\"columnMatch\":\"subscriptionId\",\"formatter\":5},{\"columnMatch\":\"ConfigStatus\",\"formatter\":5},{\"columnMatch\":\"DestinationMail\",\"formatter\":5},{\"columnMatch\":\"Definition\",\"formatter\":5},{\"columnMatch\":\"Connections\",\"formatter\":5},{\"columnMatch\":\"SenderMailbox\",\"formatter\":5},{\"columnMatch\":\"Location\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDE\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDI\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDO\",\"formatter\":5},{\"columnMatch\":\"PickerEnableMDA\",\"formatter\":5},{\"columnMatch\":\"PickerUnifiedSentinel\",\"formatter\":5},{\"columnMatch\":\"PickerEnableCopilot\",\"formatter\":5}]},\"sortBy\":[],\"tileSettings\":{\"showBorder\":false},\"graphSettings\":{\"type\":0}},\"name\":\"QueryLogicApp\"},{\"type\":12,\"content\":{\"version\":\"NotebookGroup/1.0\",\"groupType\":\"editable\",\"loadType\":\"always\",\"items\":[{\"type\":1,\"content\":{\"json\":\"<h2>LogicApp settings:</h2>\"},\"name\":\"text - 1\"},{\"type\":1,\"content\":{\"json\":\"<p>Specify for which defender workloads you want to calculate the KPIs and to whom you want to send the info (you can add multiple semicolon-separated mail addresses):</p>\"},\"name\":\"text - destinationMail\"},{\"type\":9,\"content\":{\"version\":\"KqlParameterItem/1.0\",\"parameters\":[{\"id\":\"cea43ad5-4daf-46bc-b348-fbaef059e3b8\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDE\",\"label\":\"Defender for Endpoint\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDE}=='true','true',''), value=='false', iff({PickerEnableMDE}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"f1cd2945-4bb4-472e-9a1f-b3d11d91a06b\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDI\",\"label\":\"Defender for Identity\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDI}=='true','true',''), value=='false', iff({PickerEnableMDI}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"09adaeef-2ab5-436c-a7bc-91149baabd15\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDA\",\"label\":\"Defender for Cloud Apps\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDA}=='true','true',''), value=='false', iff({PickerEnableMDA}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"77f1d0d7-9272-4a0d-8594-3f540b35d705\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableMDO\",\"label\":\"Defender for Office\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableMDO}=='true','true',''), value=='false', iff({PickerEnableMDO}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"882c054d-ff94-4c20-b770-99d9c074fa53\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"UnifiedSentinel\",\"label\":\"Sentinel Unified Portal\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerUnifiedSentinel}=='true','true',''), value=='false', iff({PickerUnifiedSentinel}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"eadfad42-195c-4c62-91c6-0d04b79253e6\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"EnableCopilot\",\"label\":\"SecurityCopilot\",\"type\":10,\"isRequired\":true,\"query\":\"resources | take 1 | extend dummy = 1 | join kind=inner ( datatable(dummy:int, value:string, label:string) [ 1, 'true', 'Enabled', 1, 'false', 'Disabled' ] ) on dummy | extend selected = case( value=='true', iff({PickerEnableCopilot}=='true','true',''), value=='false', iff({PickerEnableCopilot}=='true','','true'), '' ) | project value,label,selected\",\"crossComponentResources\":[\"value::all\"],\"typeSettings\":{\"additionalResourceOptions\":[],\"showDefault\":false},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},{\"id\":\"a1c2b3d4-e5f6-4711-8222-334455667788\",\"version\":\"KqlParameterItem/1.0\",\"name\":\"destinationMail\",\"label\":\"Destination mailboxes\",\"type\":1,\"query\":\"Resources\\r\\n| take 1\\r\\n| project destinationMail = '{DestinationMail}'\",\"crossComponentResources\":[\"{Subscription}\"],\"timeContext\":{\"durationMs\":86400000},\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"}],\"style\":\"formHorizontal\",\"queryType\":1,\"resourceType\":\"microsoft.resourcegraph/resources\"},\"name\":\"parameters - 0\"},{\"type\":11,\"content\":{\"version\":\"LinkItem/1.0\",\"style\":\"paragraph\",\"links\":[{\"id\":\"1678b223-1a29-4fae-8d77-09444832b199\",\"linkTarget\":\"ArmAction\",\"linkLabel\":\"Apply Configuration\",\"style\":\"primary\",\"linkIsContextBlade\":true,\"armActionContext\":{\"path\":\"{ResourceId}?api-version=2019-05-01\",\"headers\":[],\"params\":[],\"body\":\"{\\r\\n    \\\"properties\\\": {\\r\\n        \\\"definition\\\": {Definition:json},\\r\\n        \\\"parameters\\\": {\\r\\n  \\\"EnableMDE\\\": { \\\"value\\\": \\\"{EnableMDE}\\\" },\\r\\n  \\\"EnableMDI\\\": { \\\"value\\\": \\\"{EnableMDI}\\\" },\\r\\n  \\\"EnableMDO\\\": { \\\"value\\\": \\\"{EnableMDO}\\\" },\\r\\n  \\\"EnableMDA\\\": { \\\"value\\\": \\\"{EnableMDA}\\\" },\\r\\n  \\\"UnifiedSentinel\\\": { \\\"value\\\": \\\"{UnifiedSentinel}\\\" },\\r\\n  \\\"EnableCopilot\\\": { \\\"value\\\": \\\"{EnableCopilot}\\\" },\\r\\n  \\\"destinationMail\\\": { \\\"value\\\": \\\"{destinationMail}\\\" },\\r\\n  \\\"senderMailbox\\\": { \\\"value\\\": \\\"{SenderMailbox}\\\" },\\r\\n  \\\"$connections\\\": {Connections:json}\\r\\n}\\r\\n\\r\\n    },\\r\\n    \\\"location\\\": \\\"{Location}\\\"\\r\\n}\",\"httpMethod\":\"PUT\",\"description\":\"# Actions can potentially modify resources.\\n## Please use caution and include a confirmation message in this description when authoring this command.\"}}]},\"name\":\"links - 2\"}]},\"customWidth\":\"50\",\"conditionalVisibility\":{\"parameterName\":\"ResourceId\",\"comparison\":\"isNotEqualTo\",\"value\":\"\"},\"name\":\"EditConfig\",\"styleSettings\":{\"maxWidth\":\"100%\"}}],\"isLocked\":false,\"fallbackResourceIds\":[\"azure monitor\"]}",
     "workbookSerializedData": "[replace(variables('workbookSerializedDataRaw'), '__LOGICAPP_RESOURCEID__', resourceId('Microsoft.Logic/workflows', parameters('logicApp_name')))]"
   },
   "resources": [
@@ -215,6 +215,16 @@
                     "name": "kql_top3_users_phishing_volume",
                     "type": "string",
                     "value": "let window = 3d; EmailEvents | where Timestamp >= ago(window) | extend ThreatTypes = column_ifexists(\"ThreatTypes\", dynamic([])) | where tostring(ThreatTypes) has \"Phish\" | summarize PhishMessages = count() by RecipientEmailAddress | top 3 by PhishMessages desc"
+                  },
+                  {
+                    "name": "kql_anomalous_cloud_activity_top5",
+                    "type": "string",
+                    "value": "let window = 24h; CloudAppEvents | where Timestamp >= ago(window) | where isnotempty(UncommonForUser) and tostring(UncommonForUser) != '' and tostring(UncommonForUser) != '[]' | summarize Events=count() by AccountDisplayName, AccountId, Application | top 5 by Events desc"
+                  },
+                  {
+                    "name": "kql_identity_risk_snapshot",
+                    "type": "string",
+                    "value": "IdentityInfo | summarize arg_max(Timestamp, *) by AccountUpn | summarize Compromised = countif(RiskStatus in ('ConfirmedCompromised')), HighRiskLevel = countif(RiskLevel == 'High'), MediumRiskLevel = countif(RiskLevel == 'Medium')"
                   }
                 ]
               }
@@ -472,7 +482,7 @@
                   "runAfter": {},
                   "inputs": {
                     "method": "POST",
-                    "uri": "https://api.security.microsoft.com/api/advancedhunting/run",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
                     "headers": {
                       "Content-Type": "application/json; charset=utf-8"
                     },
@@ -481,7 +491,7 @@
                     },
                     "authentication": {
                       "type": "ManagedServiceIdentity",
-                      "audience": "https://api.security.microsoft.com"
+                      "audience": "https://graph.microsoft.com"
                     }
                   }
                 },
@@ -497,7 +507,7 @@
                     "schema": {
                       "type": "object",
                       "properties": {
-                        "Results": {
+                        "results": {
                           "type": "array",
                           "items": {
                             "type": "object"
@@ -515,7 +525,7 @@
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@coalesce(first(body('Parse_DevicesNoTelemetry')?['Results'])?['DevicesWithoutTelemetry'], 0)"
+                  "inputs": "@coalesce(first(body('Parse_DevicesNoTelemetry')?['results'])?['DevicesWithoutTelemetry'], 0)"
                 },
                 "AH_Top3DevicesAlertVolume": {
                   "type": "Http",
@@ -820,7 +830,7 @@
                   "runAfter": {},
                   "inputs": {
                     "method": "POST",
-                    "uri": "https://api.security.microsoft.com/api/advancedhunting/run",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
                     "headers": {
                       "Content-Type": "application/json; charset=utf-8"
                     },
@@ -829,7 +839,7 @@
                     },
                     "authentication": {
                       "type": "ManagedServiceIdentity",
-                      "audience": "https://api.security.microsoft.com"
+                      "audience": "https://graph.microsoft.com"
                     }
                   }
                 },
@@ -845,7 +855,7 @@
                     "schema": {
                       "type": "object",
                       "properties": {
-                        "Results": {
+                        "results": {
                           "type": "array",
                           "items": {
                             "type": "object"
@@ -863,7 +873,7 @@
                       "Succeeded"
                     ]
                   },
-                  "inputs": "@coalesce(first(body('Parse_ZeroDayNoFix')?['Results'])?['DevicesExposed'], 0)"
+                  "inputs": "@coalesce(first(body('Parse_ZeroDayNoFix')?['results'])?['DevicesExposed'], 0)"
                 },
                 "AH_NewHighSevCVEs": {
                   "type": "Http",
@@ -974,6 +984,74 @@
                 ]
               },
               "actions": {
+                "GH_IdentityRisk_Snapshot": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_identity_risk_snapshot')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_IdentityRisk_Snapshot": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "GH_IdentityRisk_Snapshot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('GH_IdentityRisk_Snapshot')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "Get_CompromisedUsers": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_IdentityRisk_Snapshot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['Compromised'], 0)"
+                },
+                "Get_HighRiskUsers": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_IdentityRisk_Snapshot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['HighRiskLevel'], 0)"
+                },
+                "Get_MediumRiskUsers": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Parse_IdentityRisk_Snapshot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['MediumRiskLevel'], 0)"
+                },
                 "AH_Top3UsersAlertVolume": {
                   "type": "Http",
                   "runAfter": {},
@@ -1046,11 +1124,20 @@
                   "runAfter": {
                     "HTML_TopUsersAlerts": [
                       "Succeeded"
+                    ],
+                    "Get_CompromisedUsers": [
+                      "Succeeded"
+                    ],
+                    "Get_HighRiskUsers": [
+                      "Succeeded"
+                    ],
+                    "Get_MediumRiskUsers": [
+                      "Succeeded"
                     ]
                   },
                   "inputs": {
                     "name": "sec_MDI",
-                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>🏆 Top users by alert volume (30d)</strong> <span class=\"ext\">↗</span></a></div> <div class=\"card\"> @{body('HTML_TopUsersAlerts')} </div>"
+                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/identities/dashboard\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>👤 Identity risk snapshot</strong> <span class=\"ext\">↗</span></a></div> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_CompromisedUsers')}</div> <div class=\"l\">Compromised users</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_HighRiskUsers')}</div> <div class=\"l\">High risk users</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_MediumRiskUsers')}</div> <div class=\"l\">Medium risk users</div> </div> </div> <div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>🏆 Top users by alert volume (30d)</strong> <span class=\"ext\">↗</span></a></div> <div class=\"card\"> @{body('HTML_TopUsersAlerts')} </div>"
                   }
                 }
               },
@@ -1156,6 +1243,73 @@
                 ]
               },
               "actions": {
+                "GH_AnomalousCloudActivity_Top5": {
+                  "type": "Http",
+                  "runAfter": {},
+                  "inputs": {
+                    "method": "POST",
+                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                    "headers": {
+                      "Content-Type": "application/json; charset=utf-8"
+                    },
+                    "body": {
+                      "Query": "@variables('kql_anomalous_cloud_activity_top5')"
+                    },
+                    "authentication": {
+                      "type": "ManagedServiceIdentity",
+                      "audience": "https://graph.microsoft.com"
+                    }
+                  }
+                },
+                "Parse_AnomalousCloudActivity_Top5": {
+                  "type": "ParseJson",
+                  "runAfter": {
+                    "GH_AnomalousCloudActivity_Top5": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "content": "@body('GH_AnomalousCloudActivity_Top5')",
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "HTML_AnomalousCloudActivity_Top5": {
+                  "type": "Table",
+                  "runAfter": {
+                    "Parse_AnomalousCloudActivity_Top5": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "from": "@coalesce(body('Parse_AnomalousCloudActivity_Top5')?['results'], json('[]'))",
+                    "format": "HTML",
+                    "columns": [
+                      {
+                        "header": "User",
+                        "value": "@{coalesce(item()?['AccountDisplayName'], '-')}"
+                      },
+                      {
+                        "header": "App",
+                        "value": "@{coalesce(item()?['Application'], '-')}"
+                      },
+                      {
+                        "header": "Events",
+                        "value": "@{coalesce(item()?['Events'], 0)}"
+                      }
+                    ]
+                  }
+                },
                 "AH_NewDiscoveredApps": {
                   "type": "Http",
                   "runAfter": {},
@@ -1211,11 +1365,14 @@
                   "runAfter": {
                     "Get_NewDiscoveredApps": [
                       "Succeeded"
+                    ],
+                    "HTML_AnomalousCloudActivity_Top5": [
+                      "Succeeded"
                     ]
                   },
                   "inputs": {
                     "name": "sec_MDA",
-                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/cloudapps/discovery\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>☁️ Cloud app discovery</strong> <span class=\"ext\">↗</span></a></div> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_NewDiscoveredApps')}</div> <div class=\"l\">New discovered apps (last 24h)</div> </div> </div>"
+                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/cloudapps/discovery\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>☁️ Cloud app discovery</strong> <span class=\"ext\">↗</span></a></div> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_NewDiscoveredApps')}</div> <div class=\"l\">New discovered apps (last 24h)</div> </div> </div> <div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/cloudapps/activity-log\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>🚩 Anomalous cloud activity</strong> <span class=\"ext\">↗</span></a></div> <div class=\"card\">@{body('HTML_AnomalousCloudActivity_Top5')}</div>"
                   }
                 }
               },
