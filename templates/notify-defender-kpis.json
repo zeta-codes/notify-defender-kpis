@@ -222,9 +222,14 @@
                     "value": "let window = 24h; CloudAppEvents | where Timestamp >= ago(window) | where isnotempty(UncommonForUser) and tostring(UncommonForUser) != '' and tostring(UncommonForUser) != '[]' | summarize Events=count() by AccountDisplayName, AccountId, Application | top 5 by Events desc"
                   },
                   {
-                    "name": "kql_identity_risk_snapshot",
+                    "name": "kql_identity_risk_snapshot_sentinel",
                     "type": "string",
-                    "value": "IdentityInfo | summarize arg_max(Timestamp, *) by AccountUpn | summarize Compromised = countif(RiskStatus in ('ConfirmedCompromised')), HighRiskLevel = countif(RiskLevel == 'High'), MediumRiskLevel = countif(RiskLevel == 'Medium')"
+                    "value": "IdentityInfo | summarize arg_max(Timestamp,*) by AccountUpn | summarize Compromised = countif(RiskStatus in ('ConfirmedCompromised', 'AtRisk')), HighRiskLevel = countif(RiskLevel == 'High'), MediumRiskLevel = countif(RiskLevel == 'Medium')"
+                  },
+                  {
+                    "name": "kql_identity_risk_snapshot_basic",
+                    "type": "string",
+                    "value": "IdentityInfo | summarize arg_max(Timestamp,*) by AccountUpn | summarize Compromised = 0, HighRiskLevel = countif(RiskLevel == 'High'), MediumRiskLevel = countif(RiskLevel == 'Medium')"
                   }
                 ]
               }
@@ -984,73 +989,157 @@
                 ]
               },
               "actions": {
-                "GH_IdentityRisk_Snapshot": {
-                  "type": "Http",
+                "ConditionSentinelForMDI": {
+                  "type": "If",
                   "runAfter": {},
-                  "inputs": {
-                    "method": "POST",
-                    "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
-                    "headers": {
-                      "Content-Type": "application/json; charset=utf-8"
-                    },
-                    "body": {
-                      "Query": "@variables('kql_identity_risk_snapshot')"
-                    },
-                    "authentication": {
-                      "type": "ManagedServiceIdentity",
-                      "audience": "https://graph.microsoft.com"
-                    }
-                  }
-                },
-                "Parse_IdentityRisk_Snapshot": {
-                  "type": "ParseJson",
-                  "runAfter": {
-                    "GH_IdentityRisk_Snapshot": [
-                      "Succeeded"
+                  "expression": {
+                    "equals": [
+                      "@toLower(coalesce(string(parameters('UnifiedSentinel')), ''))",
+                      "true"
                     ]
                   },
-                  "inputs": {
-                    "content": "@body('GH_IdentityRisk_Snapshot')",
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "results": {
-                          "type": "array",
-                          "items": {
-                            "type": "object"
+                  "actions": {
+                    "GHIdentityRiskSnapshot": {
+                      "type": "Http",
+                      "runAfter": {},
+                      "inputs": {
+                        "method": "POST",
+                        "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                        "headers": {
+                          "Content-Type": "application/json; charset=utf-8"
+                        },
+                        "body": {
+                          "Query": "@variables('kql_identity_risk_snapshot_sentinel')"
+                        },
+                        "authentication": {
+                          "type": "ManagedServiceIdentity",
+                          "audience": "https://graph.microsoft.com"
+                        }
+                      }
+                    },
+                    "ParseIdentityRiskSnapshot": {
+                      "type": "ParseJson",
+                      "runAfter": {
+                        "GHIdentityRiskSnapshot": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": {
+                        "content": "@body('GHIdentityRiskSnapshot')",
+                        "schema": {
+                          "type": "object",
+                          "properties": {
+                            "results": {
+                              "type": "array",
+                              "items": {
+                                "type": "object"
+                              }
+                            }
+                          },
+                          "additionalProperties": true
+                        }
+                      }
+                    },
+                    "GetCompromisedUsers": {
+                      "type": "Compose",
+                      "runAfter": {
+                        "ParseIdentityRiskSnapshot": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": "@coalesce(first(body('ParseIdentityRiskSnapshot')?['results'])?['Compromised'], 0)"
+                    },
+                    "GetHighRiskUsers": {
+                      "type": "Compose",
+                      "runAfter": {
+                        "ParseIdentityRiskSnapshot": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": "@coalesce(first(body('ParseIdentityRiskSnapshot')?['results'])?['HighRiskLevel'], 0)"
+                    },
+                    "GetMediumRiskUsers": {
+                      "type": "Compose",
+                      "runAfter": {
+                        "ParseIdentityRiskSnapshot": [
+                          "Succeeded"
+                        ]
+                      },
+                      "inputs": "@coalesce(first(body('ParseIdentityRiskSnapshot')?['results'])?['MediumRiskLevel'], 0)"
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "GHIdentityRiskSnapshot_Basic": {
+                        "type": "Http",
+                        "runAfter": {},
+                        "inputs": {
+                          "method": "POST",
+                          "uri": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+                          "headers": {
+                            "Content-Type": "application/json; charset=utf-8"
+                          },
+                          "body": {
+                            "Query": "@variables('kql_identity_risk_snapshot_basic')"
+                          },
+                          "authentication": {
+                            "type": "ManagedServiceIdentity",
+                            "audience": "https://graph.microsoft.com"
                           }
                         }
                       },
-                      "additionalProperties": true
+                      "ParseIdentityRiskSnapshot_Basic": {
+                        "type": "ParseJson",
+                        "runAfter": {
+                          "GHIdentityRiskSnapshot_Basic": [
+                            "Succeeded"
+                          ]
+                        },
+                        "inputs": {
+                          "content": "@body('GHIdentityRiskSnapshot_Basic')",
+                          "schema": {
+                            "type": "object",
+                            "properties": {
+                              "results": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object"
+                                }
+                              }
+                            },
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      "GetCompromisedUsers_Basic": {
+                        "type": "Compose",
+                        "runAfter": {
+                          "ParseIdentityRiskSnapshot_Basic": [
+                            "Succeeded"
+                          ]
+                        },
+                        "inputs": "N/A"
+                      },
+                      "GetHighRiskUsers_Basic": {
+                        "type": "Compose",
+                        "runAfter": {
+                          "ParseIdentityRiskSnapshot_Basic": [
+                            "Succeeded"
+                          ]
+                        },
+                        "inputs": "@coalesce(first(body('ParseIdentityRiskSnapshot_Basic')?['results'])?['HighRiskLevel'], 0)"
+                      },
+                      "GetMediumRiskUsers_Basic": {
+                        "type": "Compose",
+                        "runAfter": {
+                          "ParseIdentityRiskSnapshot_Basic": [
+                            "Succeeded"
+                          ]
+                        },
+                        "inputs": "@coalesce(first(body('ParseIdentityRiskSnapshot_Basic')?['results'])?['MediumRiskLevel'], 0)"
+                      }
                     }
                   }
-                },
-                "Get_CompromisedUsers": {
-                  "type": "Compose",
-                  "runAfter": {
-                    "Parse_IdentityRisk_Snapshot": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['Compromised'], 0)"
-                },
-                "Get_HighRiskUsers": {
-                  "type": "Compose",
-                  "runAfter": {
-                    "Parse_IdentityRisk_Snapshot": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['HighRiskLevel'], 0)"
-                },
-                "Get_MediumRiskUsers": {
-                  "type": "Compose",
-                  "runAfter": {
-                    "Parse_IdentityRisk_Snapshot": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": "@coalesce(first(body('Parse_IdentityRisk_Snapshot')?['results'])?['MediumRiskLevel'], 0)"
                 },
                 "AH_Top3UsersAlertVolume": {
                   "type": "Http",
@@ -1125,19 +1214,13 @@
                     "HTML_TopUsersAlerts": [
                       "Succeeded"
                     ],
-                    "Get_CompromisedUsers": [
-                      "Succeeded"
-                    ],
-                    "Get_HighRiskUsers": [
-                      "Succeeded"
-                    ],
-                    "Get_MediumRiskUsers": [
+                    "ConditionSentinelForMDI": [
                       "Succeeded"
                     ]
                   },
                   "inputs": {
                     "name": "sec_MDI",
-                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/identities/dashboard\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>👤 Identity risk snapshot</strong> <span class=\"ext\">↗</span></a></div> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{outputs('Get_CompromisedUsers')}</div> <div class=\"l\">Compromised users</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_HighRiskUsers')}</div> <div class=\"l\">High risk users</div> </div> <div class=\"card\"> <div class=\"v\">@{outputs('Get_MediumRiskUsers')}</div> <div class=\"l\">Medium risk users</div> </div> </div> <div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>🏆 Top users by alert volume (30d)</strong> <span class=\"ext\">↗</span></a></div> <div class=\"card\"> @{body('HTML_TopUsersAlerts')} </div>"
+                    "value": "<div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/identities/dashboard\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>👤 Identity risk snapshot</strong> <span class=\"ext\">↗</span></a></div> <div class=\"kpi\"> <div class=\"card\"> <div class=\"v\">@{coalesce(outputs('GetCompromisedUsers'), outputs('GetCompromisedUsers_Basic'))}</div> <div class=\"l\">Compromised users</div> </div> <div class=\"card\"> <div class=\"v\">@{coalesce(outputs('GetHighRiskUsers'), outputs('GetHighRiskUsers_Basic'), 0)}</div> <div class=\"l\">High risk users</div> </div> <div class=\"card\"> <div class=\"v\">@{coalesce(outputs('GetMediumRiskUsers'), outputs('GetMediumRiskUsers_Basic'), 0)}</div> <div class=\"l\">Medium risk users</div> </div> </div> <div class=\"h2\"><a class=\"titleLink\" href=\"https://security.microsoft.com/incidents\" target=\"_blank\" rel=\"noopener noreferrer\"><strong>🏆 Top users by alert volume (30d)</strong> <span class=\"ext\">↗</span></a></div> <div class=\"card\"> @{body('HTML_TopUsersAlerts')} </div>"
                   }
                 }
               },
