@@ -144,7 +144,7 @@
                   {
                     "name": "kql_active_devices",
                     "type": "string",
-                    "value": "let window = 1d; DeviceInfo | where Timestamp >= ago(window) | where OnboardingStatus == \"Onboarded\" | summarize TotalOnboarded = dcount(DeviceId)"
+                    "value": "let window = 1d; DeviceInfo | where Timestamp >= ago(window) | where OnboardingStatus == 'Onboarded' | summarize TotalOnboarded = dcount(DeviceId)"
                   },
                   {
                     "name": "kql_new_alerts",
@@ -154,12 +154,12 @@
                   {
                     "name": "kql_incidents_closed_SLA",
                     "type": "string",
-                    "value": "let window = 24h; let SLATime=24; SecurityIncident | where TimeGenerated >= ago(window) | where Status == \"Closed\" | extend ResolutionTimeHours = datetime_diff('hour', ClosedTime, CreatedTime) | summarize SLA_Compliance = countif(ResolutionTimeHours <= SLATime), Total = count() | extend PIncidentsClosedInSLA = 100.0 * SLA_Compliance / Total | project PIncidentsClosedInSLA"
+                    "value": "let window = 24h; let SLATime=24; SecurityIncident | where TimeGenerated >= ago(window) | where Status == 'Closed' | extend ResolutionTimeHours = datetime_diff('hour', ClosedTime, CreatedTime) | summarize SLA_Compliance = countif(ResolutionTimeHours <= SLATime), Total = count() | extend PIncidentsClosedInSLA = 100.0 * SLA_Compliance / Total | project PIncidentsClosedInSLA"
                   },
                   {
                     "name": "kql_incidents_by_severity_7d",
                     "type": "string",
-                    "value": "SecurityIncident | where TimeGenerated >= ago(7d) | summarize arg_max(TimeGenerated,*) by IncidentNumber | summarize High = countif(Severity == \"High\"), Medium = countif(Severity == \"Medium\"), Low = countif(Severity == \"Low\")"
+                    "value": "SecurityIncident | where TimeGenerated >= ago(7d) | summarize arg_max(TimeGenerated,*) by IncidentNumber | summarize High = countif(Severity == 'High'), Medium = countif(Severity == 'Medium'), Low = countif(Severity == 'Low')"
                   },
                   {
                     "name": "kql_new_discovered_apps",
@@ -169,12 +169,12 @@
                   {
                     "name": "kql_devices_no_telemetry",
                     "type": "string",
-                    "value": "let stale_window = 3d; DeviceInfo | where OnboardingStatus == \"Onboarded\" | summarize LastSeen = max(Timestamp) by DeviceId | where LastSeen < ago(stale_window) | summarize DevicesWithoutTelemetry = dcount(DeviceId)"
+                    "value": "let stale_window = 3d; DeviceInfo | where OnboardingStatus == 'Onboarded' | summarize LastSeen = max(Timestamp) by DeviceId | where LastSeen < ago(stale_window) | summarize DevicesWithoutTelemetry = dcount(DeviceId)"
                   },
                   {
                     "name": "kql_top3_users_alert_volume",
                     "type": "string",
-                    "value": "let window = 30d; AlertEvidence | where Timestamp >= ago(window) | where EntityType == \"User\" | extend DisplayName = tostring(parse_json(AdditionalFields)[\"DisplayName\"]) | join kind=leftouter ( IdentityInfo | where Timestamp >= ago(30d) | summarize arg_max(Timestamp,*) by AccountUpn) on AccountUpn | summarize AlertCount = count() by AccountUpn, DisplayName, RiskLevel | project DisplayName, RiskLevel, AlertCount | top 3 by AlertCount desc"
+                    "value": "let window = 30d; AlertEvidence | where Timestamp >= ago(window) | where EntityType == 'User' | extend DisplayName = tostring(parse_json(AdditionalFields)['DisplayName']) | join kind=leftouter ( IdentityInfo | where Timestamp >= ago(30d) | summarize arg_max(Timestamp,*) by AccountUpn) on AccountUpn | summarize AlertCount = count() by AccountUpn, DisplayName, RiskLevel | project DisplayName, RiskLevel, AlertCount | top 3 by AlertCount desc"
                   },
                   {
                     "name": "kql_top3_devices_alert_volume",
@@ -184,7 +184,7 @@
                   {
                     "name": "kql_high_exposure_devices",
                     "type": "string",
-                    "value": "let window = 30d; DeviceInfo | where Timestamp > ago(window) | summarize arg_max(Timestamp, *) by DeviceId | where ExposureLevel == \"High\" | summarize HighExposureDevices = dcount(DeviceId)"
+                    "value": "let window = 30d; DeviceInfo | where Timestamp > ago(window) | summarize arg_max(Timestamp, *) by DeviceId | where ExposureLevel == 'High' | summarize HighExposureDevices = dcount(DeviceId)"
                   },
                   {
                     "name": "kql_top_cves_by_exposed_devices",
@@ -194,7 +194,7 @@
                   {
                     "name": "kql_pct_patchable_now",
                     "type": "string",
-                    "value": "let exposed = DeviceTvmSoftwareVulnerabilities | summarize by DeviceId; let patchable = DeviceTvmSoftwareVulnerabilities | where isnotempty(RecommendedSecurityUpdateId) or isnotempty(RecommendedSecurityUpdate) | summarize by DeviceId; let total = toscalar(exposed  | summarize Total=dcount(DeviceId)); let withUpdate = toscalar(patchable | summarize Patchable=dcount(DeviceId)); print ExposedDevices=total, WithRecommendedUpdate=withUpdate, PctWithRecommendedUpdate=iff(total == 0, 0.0, 100.0 * todouble(withUpdate) / todouble(total))"
+                    "value": "let exposed = DeviceTvmSoftwareVulnerabilities | summarize by DeviceId; let patchable = DeviceTvmSoftwareVulnerabilities | where isnotempty(RecommendedSecurityUpdateId) or isnotempty(RecommendedSecurityUpdate) | summarize by DeviceId; let total = toscalar(exposed | summarize Total=dcount(DeviceId)); let withUpdate = toscalar(patchable | summarize Patchable=dcount(DeviceId)); print ExposedDevices=total, WithRecommendedUpdate=withUpdate, PctWithRecommendedUpdate=iff(total == 0, 0.0, 100.0 * todouble(withUpdate) / todouble(total))"
                   },
                   {
                     "name": "kql_cves_public_exploits",
@@ -204,17 +204,17 @@
                   {
                     "name": "kql_devices_exposed_zeroDayNoFix",
                     "type": "string",
-                    "value": "let zeroDayNoFix = DeviceTvmSoftwareVulnerabilities | where tostring(CveTags) has_any (\"ZeroDay\",\"NoSecurityUpdate\") | distinct CveId; DeviceTvmSoftwareVulnerabilities | where CveId in (zeroDayNoFix) | summarize DevicesExposed = dcount(DeviceId)"
+                    "value": "let zeroDayNoFix = DeviceTvmSoftwareVulnerabilities | where tostring(CveTags) has_any ('ZeroDay','NoSecurityUpdate') | distinct CveId; DeviceTvmSoftwareVulnerabilities | where CveId in (zeroDayNoFix) | summarize DevicesExposed = dcount(DeviceId)"
                   },
                   {
                     "name": "kql_new_high_sev_vulns_24h",
                     "type": "string",
-                    "value": "let window = 24h; let recent_high_kb = DeviceTvmSoftwareVulnerabilitiesKB | where isnotempty(PublishedDate) and PublishedDate >= ago(window) | where VulnerabilitySeverityLevel in (\"High\",\"Critical\") | project CveId, VulnerabilitySeverityLevel, PublishedDate; DeviceTvmSoftwareVulnerabilities | where CveId in (recent_high_kb | project CveId) | distinct CveId | summarize NewHighSeverityCVEs = dcount(CveId)"
+                    "value": "let window = 24h; let recent_high_kb = DeviceTvmSoftwareVulnerabilitiesKB | where isnotempty(PublishedDate) and PublishedDate >= ago(window) | where VulnerabilitySeverityLevel in ('High','Critical') | project CveId, VulnerabilitySeverityLevel, PublishedDate; DeviceTvmSoftwareVulnerabilities | where CveId in (recent_high_kb | project CveId) | distinct CveId | summarize NewHighSeverityCVEs = dcount(CveId)"
                   },
                   {
                     "name": "kql_top3_users_phishing_volume",
                     "type": "string",
-                    "value": "let window = 3d; EmailEvents | where Timestamp >= ago(window) | extend ThreatTypes = column_ifexists(\"ThreatTypes\", dynamic([])) | where tostring(ThreatTypes) has \"Phish\" | summarize PhishMessages = count() by RecipientEmailAddress | top 3 by PhishMessages desc"
+                    "value": "let window = 3d; EmailEvents | where Timestamp >= ago(window) | extend ThreatTypes = column_ifexists('ThreatTypes', dynamic([])) | where tostring(ThreatTypes) has 'Phish' | summarize PhishMessages = count() by RecipientEmailAddress | top 3 by PhishMessages desc"
                   },
                   {
                     "name": "kql_anomalous_cloud_activity_top5",
@@ -274,103 +274,16 @@
                     "value": ""
                   },
                   {
+                    "name": "sec_CopilotSummary",
+                    "type": "string",
+                    "value": ""
+                  },
+                  {
                     "name": "sec_RiskThemes",
                     "type": "string",
                     "value": ""
                   }
                 ]
-              }
-            },
-            "Condition_EnableCopilot": {
-              "type": "If",
-              "expression": "@equals(toLower(coalesce(string(parameters('EnableCopilot')), 'true')), 'true')",
-              "runAfter": {
-                "Init_EmailSections": [
-                  "Succeeded"
-                ]
-              },
-              "actions": {
-                "Security_Advisory_Copilot": {
-                  "type": "ApiConnection",
-                  "runAfter": {},
-                  "inputs": {
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
-                      }
-                    },
-                    "method": "post",
-                    "path": "/process-prompt",
-                    "body": {
-                      "PromptContent": "Which threats should I focus on based upon their exposure scores?\nReturn ONLY this HTML:\n<h2>🔐 Top 5 Threats Based on Exposure Scores</h2>\n<ol>\n  <li><strong>Threat Name</strong> – short explanation (max 2 sentences). Include exposure score.</li>\n  <li>...</li>\n</ol>\nDo not include any JSON, markdown, backticks, or extra text."
-                    }
-                  }
-                },
-                "Compose_CleanCopilotHTML": {
-                  "type": "Compose",
-                  "runAfter": {
-                    "Security_Advisory_Copilot": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": "@replace(replace(body('Security_Advisory_Copilot')?['evaluationResultContent'], '```html', ''), '```', '')"
-                },
-                "Set_variable_sec_Copilot": {
-                  "type": "SetVariable",
-                  "runAfter": {
-                    "Compose_CleanCopilotHTML": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": {
-                    "name": "sec_Copilot",
-                    "value": "<div class=\"h2\"><strong>🔐 Security Copilot Advisor </strong></div><div class=\"card\">@{outputs('Compose_CleanCopilotHTML')}</div>"
-                  }
-                },
-                "Submit_RiskThemesPrompt": {
-                  "type": "ApiConnection",
-                  "runAfter": {
-                    "Set_variable_sec_Copilot": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": {
-                    "host": {
-                      "connection": {
-                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
-                      }
-                    },
-                    "method": "post",
-                    "path": "/process-prompt",
-                    "body": {
-                      "PromptContent": "From the latest incidents and alerts in Microsoft 365 Defender, identify the top 3 risk themes affecting our environment (for example phishing, endpoint exploitation, lateral movement, misconfiguration).\nFor each theme, provide:\n- A 1–2 sentence summary\n- Why it matters\n- One recommended action for the SOC or security engineering team.\nKeep the wording business-friendly, suitable for a daily KPI email.\nReturn ONLY this HTML:\n<h2>🔍 Top 3 Risk Themes</h2>\n<ol>\n  <li><strong>Theme Name</strong><br/>Summary: ...<br/><em>Why it matters:</em> ...<br/><em>Recommended action:</em> ...</li>\n  <li>...</li>\n</ol>\nDo not include any JSON, markdown, backticks, or extra text."
-                    }
-                  }
-                },
-                "Compose_CleanRiskThemesHTML": {
-                  "type": "Compose",
-                  "runAfter": {
-                    "Submit_RiskThemesPrompt": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": "@replace(replace(body('Submit_RiskThemesPrompt')?['evaluationResultContent'], '```html', ''), '```', '')"
-                },
-                "Set_variable_sec_RiskThemes": {
-                  "type": "SetVariable",
-                  "runAfter": {
-                    "Compose_CleanRiskThemesHTML": [
-                      "Succeeded"
-                    ]
-                  },
-                  "inputs": {
-                    "name": "sec_RiskThemes",
-                    "value": "<div class=\"h2\"><strong>🔍 SOC Recommendations</strong></div><div class=\"card\">@{outputs('Compose_CleanRiskThemesHTML')}</div>"
-                  }
-                }
-              },
-              "else": {
-                "actions": {}
               }
             },
             "Condition_EnableMDE": {
@@ -1619,8 +1532,9 @@
                 "actions": {}
               }
             },
-            "Compose_EmailBody": {
-              "type": "Compose",
+            "Condition_EnableCopilot": {
+              "type": "If",
+              "expression": "@equals(toLower(coalesce(string(parameters('EnableCopilot')), 'true')), 'true')",
               "runAfter": {
                 "Condition_EnableMDE": [
                   "Succeeded"
@@ -1636,12 +1550,150 @@
                 ],
                 "Condition_UnifiedSentinel": [
                   "Succeeded"
-                ],
+                ]
+              },
+              "actions": {
+                "Compose_CopilotEvidence": {
+                  "type": "Compose",
+                  "runAfter": {},
+                  "inputs": "@concat('Defender for Endpoint\n- Active onboarded devices (24h): ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_TotalOnboarded')), 'N/A'), '\n- New alerts (24h): ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_NewEndpointAlerts')), 'N/A'), '\n- Devices without telemetry (3d): ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_DevicesWithoutTelemetry')), 'N/A'), '\n- High exposure devices: ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_HighExposureDevices')), 'N/A'), '\n- CVEs with public exploits: ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_CVEsWithPublicExploits')), 'N/A'), '\n- Devices exposed to ZeroDay/NoFix: ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_DevicesExposedZeroDayNoFix')), 'N/A'), '\n- New High/Critical CVEs (24h): ', if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(outputs('Get_NewHighSeverityCVEs')), 'N/A'), '\n\nIdentity\n- Compromised users: ', if(equals(actions('Condition_EnableMDI').status, 'Succeeded'), string(coalesce(outputs('GetCompromisedUsers'), outputs('GetCompromisedUsers_Basic'), 'N/A')), 'N/A'), '\n- High risk users: ', if(equals(actions('Condition_EnableMDI').status, 'Succeeded'), string(coalesce(outputs('GetHighRiskUsers'), outputs('GetHighRiskUsers_Basic'), 'N/A')), 'N/A'), '\n- Medium risk users: ', if(equals(actions('Condition_EnableMDI').status, 'Succeeded'), string(coalesce(outputs('GetMediumRiskUsers'), outputs('GetMediumRiskUsers_Basic'), 'N/A')), 'N/A'), '\n\nEmail / phishing\n- Phishing-targeted users section generated: ', if(equals(actions('Condition_EnableMDO').status, 'Succeeded'), 'Yes', 'No'), '\n\nCloud apps\n- New discovered apps (24h): ', if(equals(actions('Condition_EnableMDA').status, 'Succeeded'), string(outputs('Get_NewDiscoveredApps')), 'N/A'), '\n- Anomalous cloud activity section generated: ', if(equals(actions('Condition_EnableMDA').status, 'Succeeded'), 'Yes', 'No'), '\n\nSOC\n- Incidents closed within 24h SLA (%): ', if(equals(actions('Condition_UnifiedSentinel').status, 'Succeeded'), string(outputs('Get_PIncidentsClosedInSLA')), 'N/A'), '\n- High severity incidents (7d): ', if(equals(actions('Condition_UnifiedSentinel').status, 'Succeeded'), string(outputs('Get_Inc_High')), 'N/A'), '\n- Medium severity incidents (7d): ', if(equals(actions('Condition_UnifiedSentinel').status, 'Succeeded'), string(outputs('Get_Inc_Medium')), 'N/A'), '\n- Low severity incidents (7d): ', if(equals(actions('Condition_UnifiedSentinel').status, 'Succeeded'), string(outputs('Get_Inc_Low')), 'N/A'))"
+                },
+                "Security_Advisory_Copilot": {
+                  "type": "ApiConnection",
+                  "runAfter": {
+                    "Compose_CopilotEvidence": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/process-prompt",
+                    "body": {
+                      "PromptContent": "You are a vulnerability management advisor reviewing the daily exposure posture for a Microsoft 365 Defender tenant.\n\nYour task: identify the top 5 vulnerability and exposure risks the tenant should remediate TODAY.\n\nFocus EXCLUSIVELY on:\n- CVEs from the tenant's Advanced Hunting Top CVE list\n- Publicly exploitable vulnerabilities\n- Devices with High exposure level\n- Zero-day or no-fix vulnerabilities\n- Devices without telemetry as exposure blind spots\n\nDo NOT cover phishing, identity-only risks, SOC process issues, or general policy weaknesses — those are handled in other sections.\n\nTenant KPI context:\n@{outputs('Compose_CopilotEvidence')}\n\nTenant Top CVEs from Advanced Hunting:\n@{if(equals(actions('Condition_EnableMDE').status, 'Succeeded'), string(body('AH_TopCVEs')?['value']), 'N/A')}\n\nInstructions:\n- If the Top CVE list contains CVE IDs, at least 3 of the 5 items must reference a specific CVE ID from that list\n- Use the KPI values to explain urgency and blast radius (how many devices are affected)\n- Do not invent CVE IDs that are not present in the Top CVE list\n- If the Top CVE list is N/A or empty, derive the 5 items from the KPI metrics only\n- If a KPI metric is N/A or 0, skip it — do not fabricate a risk\n- Do not include URLs, markdown links, citations, references, footnotes, or source numbers such as [1], [[1]], (1), or URLs in parentheses.\n- Do not mention Microsoft Learn, documentation, or external sources.\n\nFor each item:\n- Name the CVE ID or vulnerability risk\n- Reference the supporting metric or CVE list evidence\n- Explain in 1-2 sentences why it is dangerous in this environment\n- Give one specific remediation action using Defender Vulnerability Management, Intune, or MDE\n\nKeep language concise, technical but readable by a security manager.\nOutput HTML only. No markdown, no backticks, no JSON, no introductory text, no text after the HTML.\n\nReturn exactly this HTML structure:\n<ol>\n  <li>\n    <strong>[CVE ID or risk name]</strong> — <em>[supporting evidence]</em><br/>\n    [Why it matters in this environment — 1-2 sentences]<br/>\n    <em>Remediation:</em> [Specific action with tool name]\n  </li>\n</ol>"
+                    }
+                  }
+                },
+                "Compose_CleanCopilotHTML": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Security_Advisory_Copilot": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@replace(replace(replace(replace(body('Security_Advisory_Copilot')?['evaluationResultContent'], '```html', ''), '```', ''), '<html>', ''), '</html>', '')"
+                },
+                "Set_variable_sec_Copilot": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Compose_CleanCopilotHTML": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_Copilot",
+                    "value": "<div class=\"h2\"><strong>🔐 Security Copilot Advisor - Top Vulnerability & Exposure Risks</strong></div><div class=\"card\">@{outputs('Compose_CleanCopilotHTML')}</div>"
+                  }
+                },
+                "Submit_CopilotExecutiveSummary": {
+                  "type": "ApiConnection",
+                  "runAfter": {
+                    "Compose_CopilotEvidence": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/process-prompt",
+                    "body": {
+                      "PromptContent": "You are a Chief Information Security Officer advisor writing a daily security posture briefing for a Microsoft 365 tenant.\n\nYour task: evaluate the overall security health of this tenant across all product areas and produce a concise executive overview — not a list of remediation steps, but an assessment of where the tenant stands today.\n\nAudience: IT director or security manager. They want to know if the environment is healthy, degrading, or under active threat — not what the SOC should do step by step.\n\nFull tenant KPI context:\n@{outputs('Compose_CopilotEvidence')}\n\nStructure your response as:\n1. Overall posture rating: Healthy / Needs Attention / At Risk — with a one-sentence justification\n2. Top 3 signals driving the rating (pick the most significant cross-product indicators)\n3. One area that is stable or improved (if visible in the data)\n4. One area to watch in the next 24h\n\nRules:\n- Do not list remediation steps or SOC tasks — those are covered in separate sections\n- Do not repeat every metric — synthesize and evaluate\n- If data is N/A for a product, note it is not monitored and exclude it from the rating\n- Keep each point to 1-2 sentences maximum\n- If there is no major issue, say the environment appears stable and mention the top area to continue monitoring\n- Do not include URLs, markdown links, citations, references, footnotes, or source numbers such as [1], [[1]], (1), or URLs in parentheses.\n- Do not mention Microsoft Learn, documentation, or external sources.\n- Tone: calm, authoritative, business-friendly\n- Output HTML only — no markdown, no backticks, no JSON, no text before or after the HTML\n\nReturn exactly this HTML structure:\n<p><strong>Overall posture:</strong> [Healthy / Needs Attention / At Risk] — [One-sentence justification]</p>\n<h3>Key signals</h3>\n<ol>\n  <li><strong>[Signal]</strong> — [1-2 sentence evaluation]</li>\n  <li><strong>[Signal]</strong> — [1-2 sentence evaluation]</li>\n  <li><strong>[Signal]</strong> — [1-2 sentence evaluation]</li>\n</ol>\n<p><strong>Stable area:</strong> [What looks good or unchanged]</p>\n<p><strong>Watch in next 24h:</strong> [One area to monitor]</p>"
+                    }
+                  }
+                },
+                "Compose_CleanCopilotSummaryHTML": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Submit_CopilotExecutiveSummary": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@replace(replace(replace(replace(body('Submit_CopilotExecutiveSummary')?['evaluationResultContent'], '```html', ''), '```', ''), '<html>', ''), '</html>', '')"
+                },
+                "Set_variable_sec_CopilotSummary": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Compose_CleanCopilotSummaryHTML": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_CopilotSummary",
+                    "value": "<div class=\"h2\"><strong>🧠 Security Copilot Advisor - Executive Summary</strong></div><div class=\"card\">@{outputs('Compose_CleanCopilotSummaryHTML')}</div>"
+                  }
+                },
+                "Submit_RiskThemesPrompt": {
+                  "type": "ApiConnection",
+                  "runAfter": {
+                    "Compose_CopilotEvidence": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "host": {
+                      "connection": {
+                        "name": "@parameters('$connections')['securitycopilot']['connectionId']"
+                      }
+                    },
+                    "method": "post",
+                    "path": "/process-prompt",
+                    "body": {
+                      "PromptContent": "You are a SOC Team Lead writing the daily operational briefing for security analysts and incident responders.\n\nYour task: identify the top 3 active risk themes from incidents, alerts, and identity signals that the SOC team should investigate or respond to TODAY.\n\nFocus EXCLUSIVELY on:\n- Active incidents (high/medium/low severity counts and SLA compliance)\n- Identity compromise signals (compromised users, high/medium risk users)\n- Phishing and email threats\n- Anomalous cloud app activity\n- Cross-product attack chains visible in the data\n\nDo NOT cover CVEs, device patches, vulnerability remediation, or executive posture evaluation — those are handled in separate sections.\n\nTenant operational data:\n@{outputs('Compose_CopilotEvidence')}\n\nA risk theme is an observable pattern in active incidents or alerts — not a generic category. Name only themes supported by the data.\n\nFor each theme:\n- Name the specific pattern observed\n- State which data signals support it (reference the metric and value)\n- Explain the operational risk in 1-2 sentences\n- Give one specific SOC action naming the tool and analyst step (e.g. triage in Defender XDR incident queue, run KQL hunt in Sentinel, review Entra ID risky sign-ins)\n\nRules:\n- If fewer than 3 distinct themes are visible in the data, return only real ones and note the rest are not observed today\n- Do not invent themes from N/A or zero metrics\n- Do not include URLs, markdown links, citations, references, footnotes, or source numbers such as [1], [[1]], (1), or URLs in parentheses.\n- Do not mention Microsoft Learn, documentation, or external sources.\n- Output HTML only — no markdown, no backticks, no JSON, no text before or after the HTML\n\nReturn exactly this HTML structure:\n<ol>\n  <li>\n    <strong>[Theme name]</strong> — <em>[supporting metric]: [value]</em><br/>\n    <em>Operational risk:</em> [1-2 sentences]<br/>\n    <em>SOC action:</em> [Specific tool + analyst step]\n  </li>\n</ol>"
+                    }
+                  }
+                },
+                "Compose_CleanRiskThemesHTML": {
+                  "type": "Compose",
+                  "runAfter": {
+                    "Submit_RiskThemesPrompt": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": "@replace(replace(replace(replace(body('Submit_RiskThemesPrompt')?['evaluationResultContent'], '```html', ''), '```', ''), '<html>', ''), '</html>', '')"
+                },
+                "Set_variable_sec_RiskThemes": {
+                  "type": "SetVariable",
+                  "runAfter": {
+                    "Compose_CleanRiskThemesHTML": [
+                      "Succeeded"
+                    ]
+                  },
+                  "inputs": {
+                    "name": "sec_RiskThemes",
+                    "value": "<div class=\"h2\"><strong>🔍 Security Copilot Advisor - SOC Recommendations</strong></div><div class=\"card\">@{outputs('Compose_CleanRiskThemesHTML')}</div>"
+                  }
+                }
+              },
+              "else": {
+                "actions": {}
+              }
+            },
+            "Compose_EmailBody": {
+              "type": "Compose",
+              "runAfter": {
                 "Condition_EnableCopilot": [
                   "Succeeded"
                 ]
               },
-              "inputs": "<title>Defender KPIs</title> <style> body { margin: 0; padding: 0; background: #f5f6f8; font-family: Segoe UI, Arial, sans-serif } .wrapper { width: 100%; background: #f5f6f8; padding: 24px 0 } .container { max-width: 640px; margin: 0 auto; background: #fff } .header { background: #1f3a66; color: #fff; padding: 20px 24px; font-size: 22px; font-weight: 600 } .subheader { background: #0a66c2; color: #fff; padding: 8px 24px; font-size: 13px; font-weight: 600 } .content { padding: 24px; color: #111827; font-size: 14px; line-height: 1.5 } .h2 { font-size: 16px; margin: 24px 0 8px } .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fafafa; margin-bottom: 20px; box-sizing:border-box } table { width: 100%; border-collapse: collapse; font-size: 13px } th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left } th { background: #f3f4f6 } .footer { color: #6b7280; font-size: 12px; padding: 16px 24px 24px } .kpi { display:flex; flex-wrap:wrap; margin:0 -6px 8px } .kpi .card { flex:1 1 240px; min-width:240px; margin:0 6px 12px; box-sizing:border-box } .kpi .v { font-size: 22px; font-weight: 700 } .kpi .l { color: #6b7280 } .titleLink{ display:none } .sec-header{ display:flex; align-items:center; justify-content:space-between; margin:24px 0 8px } .sec-title{ font-size:16px; font-weight:700; color:#111827 } .sec-block{ border-bottom:1px solid #eceff3; padding-bottom:20px; margin-bottom:20px } .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 8px } .btn-ac{ display:inline-block; text-decoration:none; background:#f3f7fb; color:#1f3a66 !important; border:1px solid #cfd8e3; border-radius:4px; padding:8px 16px; font-size:13px; font-weight:600; font-family:Segoe UI,Arial,sans-serif; line-height:1.4; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.06) } .btn-ac:hover{ background:#eaf2fb; border-color:#b9c8d8 } .btn-ac-primary{ background:#0f6cbd; color:#fff !important; border-color:#0f6cbd } .btn-ac-primary:hover{ background:#0b5cab; border-color:#0b5cab } </style> <div class=\"wrapper\"> <table class=\"container\" cellspacing=\"0\" cellpadding=\"0\"> <tbody> <tr> <td class=\"header\">Microsoft Defender</td> </tr> <tr> <td class=\"subheader\">Daily snapshot</td> </tr> <tr> <td class=\"content\"> <p>As of <strong>@{formatDateTime(utcNow(),'dddd, dd MMMM yyyy HH:mm')} (UTC)</strong> </p> @{if(empty(variables('sec_MDE')),'',concat('<div class=\"sec-block\">',variables('sec_MDE'),'</div>'))} @{if(empty(variables('sec_MDI')),'',concat('<div class=\"sec-block\">',variables('sec_MDI'),'</div>'))} @{if(empty(variables('sec_MDO')),'',concat('<div class=\"sec-block\">',variables('sec_MDO'),'</div>'))} @{if(empty(variables('sec_MDA')),'',concat('<div class=\"sec-block\">',variables('sec_MDA'),'</div>'))} @{if(empty(variables('sec_Sentinel')),'',concat('<div class=\"sec-block\">',variables('sec_Sentinel'),'</div>'))} @{if(empty(variables('sec_Copilot')),'',concat('<div class=\"sec-block\">',variables('sec_Copilot'),'</div>'))} @{if(empty(variables('sec_RiskThemes')),'',concat('<div class=\"sec-block\">',variables('sec_RiskThemes'),'</div>'))} <p class=\"btn-row\" style=\"justify-content:center; margin-top:20px;\"> <a class=\"btn-ac btn-ac-primary\" href=\"https://security.microsoft.com\" target=\"_blank\" rel=\"noopener noreferrer\">🛡️ Open Defender portal</a> </p> </td> </tr> <tr> <td class=\"footer\"> This notification was generated by a Logic App and powered by Microsoft Defender </td> </tr> </tbody> </table> </div>"
+              "inputs": "<title>Defender KPIs</title> <style> body { margin: 0; padding: 0; background: #f5f6f8; font-family: Segoe UI, Arial, sans-serif } .wrapper { width: 100%; background: #f5f6f8; padding: 24px 0 } .container { max-width: 640px; margin: 0 auto; background: #fff } .header { background: #1f3a66; color: #fff; padding: 20px 24px; font-size: 22px; font-weight: 600 } .subheader { background: #0a66c2; color: #fff; padding: 8px 24px; font-size: 13px; font-weight: 600 } .content { padding: 24px; color: #111827; font-size: 14px; line-height: 1.5 } .h2 { font-size: 16px; margin: 24px 0 8px } .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; background: #fafafa; margin-bottom: 20px; box-sizing:border-box } table { width: 100%; border-collapse: collapse; font-size: 13px } th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left } th { background: #f3f4f6 } .footer { color: #6b7280; font-size: 12px; padding: 16px 24px 24px } .kpi { display:flex; flex-wrap:wrap; margin:0 -6px 8px } .kpi .card { flex:1 1 240px; min-width:240px; margin:0 6px 12px; box-sizing:border-box } .kpi .v { font-size: 22px; font-weight: 700 } .kpi .l { color: #6b7280 } .titleLink{ display:none } .sec-header{ display:flex; align-items:center; justify-content:space-between; margin:24px 0 8px } .sec-title{ font-size:16px; font-weight:700; color:#111827 } .sec-block{ border-bottom:1px solid #eceff3; padding-bottom:20px; margin-bottom:20px } .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 8px } .btn-ac{ display:inline-block; text-decoration:none; background:#f3f7fb; color:#1f3a66 !important; border:1px solid #cfd8e3; border-radius:4px; padding:8px 16px; font-size:13px; font-weight:600; font-family:Segoe UI,Arial,sans-serif; line-height:1.4; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.06) } .btn-ac:hover{ background:#eaf2fb; border-color:#b9c8d8 } .btn-ac-primary{ background:#0f6cbd; color:#fff !important; border-color:#0f6cbd } .btn-ac-primary:hover{ background:#0b5cab; border-color:#0b5cab } </style> <div class=\"wrapper\"> <table class=\"container\" cellspacing=\"0\" cellpadding=\"0\"> <tbody> <tr><td class=\"header\">Microsoft Defender</td></tr> <tr><td class=\"subheader\">Daily snapshot</td></tr> <tr><td class=\"content\"><p>As of <strong>@{formatDateTime(utcNow(),'dddd, dd MMMM yyyy HH:mm')} (UTC)</strong></p>@{if(empty(variables('sec_MDE')),'',concat('<div class=\"sec-block\">',variables('sec_MDE'),'</div>'))}@{if(empty(variables('sec_MDI')),'',concat('<div class=\"sec-block\">',variables('sec_MDI'),'</div>'))}@{if(empty(variables('sec_MDO')),'',concat('<div class=\"sec-block\">',variables('sec_MDO'),'</div>'))}@{if(empty(variables('sec_MDA')),'',concat('<div class=\"sec-block\">',variables('sec_MDA'),'</div>'))}@{if(empty(variables('sec_Sentinel')),'',concat('<div class=\"sec-block\">',variables('sec_Sentinel'),'</div>'))}@{if(empty(variables('sec_CopilotSummary')),'',concat('<div class=\"sec-block\">',variables('sec_CopilotSummary'),'</div>'))}@{if(empty(variables('sec_Copilot')),'',concat('<div class=\"sec-block\">',variables('sec_Copilot'),'</div>'))}@{if(empty(variables('sec_RiskThemes')),'',concat('<div class=\"sec-block\">',variables('sec_RiskThemes'),'</div>'))}<p class=\"btn-row\" style=\"justify-content:center; margin-top:20px;\"><a class=\"btn-ac btn-ac-primary\" href=\"https://security.microsoft.com\" target=\"_blank\" rel=\"noopener noreferrer\">🛡️ Open Defender portal</a></p></td></tr> <tr><td class=\"footer\">This notification was generated by a Logic App and powered by Microsoft Defender</td></tr> </tbody></table></div>"
             },
             "Init_DestinationArray": {
               "type": "InitializeVariable",
@@ -1737,15 +1789,14 @@
           "$connections": {
             "value": {
               "securitycopilot": {
-                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/securitycopilot')]",
                 "connectionId": "[resourceId('Microsoft.Web/connections', parameters('securitycopilot_connection_name'))]",
-                "connectionName": "[parameters('securitycopilot_connection_name')]"
+                "connectionName": "[parameters('securitycopilot_connection_name')]",
+                "id": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/securitycopilot')]"
               }
             }
           }
         }
       }
     }
-  ],
-  "outputs": {}
+  ]
 }
